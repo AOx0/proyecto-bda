@@ -77,7 +77,7 @@ fn main() -> Result<()> {
     uniques.iter_mut().for_each(|(k, v)| {
         if k.contains("mes") {
             // Ordenamos manualmente los meses, esta chido tener 1 es enero, 12 diciembre
-            v.sort_by(|a, b| mes_a_int(a).cmp(&mes_a_int(b)))
+            v.sort_by_key(|a| mes_a_int(a))
         } else {
             v.sort()
         }
