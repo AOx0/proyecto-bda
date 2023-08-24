@@ -56,6 +56,7 @@ pub fn extract_values(line: &str) -> Vec<String> {
     for c in line.chars() {
         if c == '"' {
             in_str = !in_str;
+            cur.push(c);
         } else if c == ',' && in_str {
             cur.push(c);
         } else if c == ',' && !in_str {
@@ -113,6 +114,17 @@ pub fn remove_empty_lines(
     let mut line = lines.next();
     while let Some(line_res) = std::mem::take(&mut line) {
         let line_str = line_res?;
+        let mut line_str = line_str.replace(['¢', '½'], "ó").replace('\u{a0}', " ");
+
+        while line_str.contains("  ") {
+            // println!("Removing duplicated space: {:?}", line_str);
+            line_str = line_str.replace("  ", " ");
+        }
+
+        if line_str.contains(" ,") {
+            // println!("Removing ' ,': {:?}", line_str);
+            line_str = line_str.replace(" ,", ",");
+        }
 
         line = if line_str.trim().is_empty().not() {
             out.write_all(line_str.trim().as_bytes())?;
@@ -131,6 +143,7 @@ pub fn remove_empty_lines(
 
             if let Some(Ok(ref ref_line)) = line {
                 // println!("Next: {:?}", line);
+
                 if ref_line.trim_start().starts_with('"').not() {
                     out.write_all(&[b'\n'])?;
                     fin += 1;

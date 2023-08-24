@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
 use proyecto_bd::*;
 
@@ -13,6 +15,8 @@ fn main() -> Result<()> {
     if !std::path::PathBuf::from("./out_temp.csv").exists() {
         let (file, out) = reader_writer(&file, "./out_temp.csv")?;
         remove_empty_lines(file, out)?;
+    } else {
+        println!("Warning: File './out_temp.csv' already exists, skipping '{file}' cleanup")
     }
 
     // Obtenemos los valores únicos
@@ -28,6 +32,13 @@ fn main() -> Result<()> {
 
         extract_uniques(headers, lines)?
     };
+
+    let mut uniques: HashMap<_, Vec<_>> = uniques
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+
+    uniques.values_mut().for_each(|v| v.sort());
 
     write!(out, "{:#?}", uniques)?;
 

@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.72"
 dhat = { version = "0.3.2", optional = true }
-itertools = "0.11.0"
 
 [profile.rdbg]
 inherits = "release"
