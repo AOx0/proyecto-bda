@@ -20,7 +20,7 @@ pub static ALLOC: dhat::Alloc = dhat::Alloc;
 ///
 /// This function will return an error if the `BufferReader` reaturns an error while reading the file lines
 pub fn extract_uniques(
-    mut headers: Vec<String>,
+    headers: &[String],
     lines: std::io::Lines<BufReader<std::fs::File>>,
 ) -> Result<HashMap<String, HashSet<String>>, anyhow::Error> {
     let mut uniques: Vec<HashSet<String>> = (0..headers.len()).map(|_| HashSet::new()).collect();
@@ -41,7 +41,7 @@ pub fn extract_uniques(
     let uniques = uniques
         .into_iter()
         .enumerate()
-        .map(|(col, vals)| (std::mem::take(&mut headers[col]), vals))
+        .map(|(col, vals)| (headers[col].clone(), vals))
         .collect::<HashMap<_, _>>();
     Ok(uniques)
 }

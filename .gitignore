@@ -5,3 +5,4 @@ dhat-*
 .DS_*
 *.csv
 *.lock
+*.json
