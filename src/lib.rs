@@ -14,6 +14,11 @@ pub use std::ops::Not;
 #[global_allocator]
 pub static ALLOC: dhat::Alloc = dhat::Alloc;
 
+/// Returns a `HashMap` with each columns and its unique values if the number of unique values is under 1000
+///
+/// # Errors
+///
+/// This function will return an error if the `BufferReader` reaturns an error while reading the file lines
 pub fn extract_uniques(
     mut headers: Vec<String>,
     lines: std::io::Lines<BufReader<std::fs::File>>,
@@ -22,16 +27,16 @@ pub fn extract_uniques(
     for line in lines {
         let line = line?;
 
-        extract_values(line)
+        extract_values(&line)
             .iter()
             .enumerate()
             .for_each(|(col, val)| {
-                if !(uniques[col].capacity() > 1000) {
+                if uniques[col].capacity() <= 1000 {
                     uniques[col].insert(val.to_string());
                 } else {
-                    uniques[col].clear()
+                    uniques[col].clear();
                 }
-            })
+            });
     }
     let uniques = uniques
         .into_iter()
@@ -41,7 +46,10 @@ pub fn extract_uniques(
     Ok(uniques)
 }
 
-pub fn extract_values(line: String) -> Vec<String> {
+/// Retrieves the values of a given comma separated line.
+/// The function skips commas that are inside of string objetcs '"'
+#[must_use]
+pub fn extract_values(line: &str) -> Vec<String> {
     let mut chunks = Vec::new();
     let mut cur = String::new();
     let mut in_str = false;
@@ -49,7 +57,7 @@ pub fn extract_values(line: String) -> Vec<String> {
         if c == '"' {
             in_str = !in_str;
         } else if c == ',' && in_str {
-            cur.push(c)
+            cur.push(c);
         } else if c == ',' && !in_str {
             chunks.push(std::mem::take(&mut cur));
         } else {
@@ -60,6 +68,15 @@ pub fn extract_values(line: String) -> Vec<String> {
     chunks
 }
 
+/// Returns a `BufReader` and a `BufWriter` of the given paths, useful when we are
+/// intending to process the contents of the reader and writing the result on the writer.
+///
+/// If the given writer already exists it overwrites it, else it creates it.
+///
+/// # Errors
+///
+/// This function will return an error if the given file path to read does not exist or if
+/// there is any problem opening any of the write and read files
 pub fn reader_writer(
     file: &str,
     write_to: &str,
@@ -75,13 +92,22 @@ pub fn reader_writer(
     Ok((file, out))
 }
 
+/// Remove carriage returns and empty lines
+///
+/// # Panics
+///
+/// Panics if there is not a single
+///
+/// # Errors
+///
+/// This function will return an error if there is a problem reading/writing to any of the files
 pub fn remove_empty_lines(
     file: std::io::BufReader<std::fs::File>,
     mut out: BufWriter<std::fs::File>,
 ) -> Result<()> {
     let mut lines = file.lines();
     out.write_all(lines.next().unwrap()?.trim().as_bytes())?;
-    out.write(&[b'\n'])?;
+    out.write_all(&[b'\n'])?;
     let mut n = 2;
     let mut fin = 2;
     let mut line = lines.next();
@@ -105,13 +131,13 @@ pub fn remove_empty_lines(
 
             if let Some(Ok(ref ref_line)) = line {
                 // println!("Next: {:?}", line);
-                if ref_line.trim_start().starts_with("\"").not() {
-                    out.write(&[b'\n'])?;
+                if ref_line.trim_start().starts_with('"').not() {
+                    out.write_all(&[b'\n'])?;
                     fin += 1;
                 } else {
                     // println!("O {fin:>8}: Appending next line: {ref_line:?}");
                     out.write_all(ref_line.trim().as_bytes())?;
-                    out.write(&[b'\n'])?;
+                    out.write_all(&[b'\n'])?;
                     fin += 1;
                     line = lines.next();
                 }

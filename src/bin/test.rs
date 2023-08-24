@@ -15,8 +15,8 @@ fn main() -> Result<()> {
         remove_empty_lines(file, out)?;
     }
 
-    let (file, mut out) = reader_writer("./out_temp.csv", "out.csv")?;
     // Obtenemos los valores únicos
+    let (file, mut out) = reader_writer("./out_temp.csv", "out.csv")?;
     let uniques = {
         let mut lines = file.lines();
 
@@ -26,8 +26,7 @@ fn main() -> Result<()> {
             .map(|a| a.to_owned())
             .collect::<Vec<String>>();
 
-        let uniques = extract_uniques(headers, lines)?;
-        uniques
+        extract_uniques(headers, lines)?
     };
 
     write!(out, "{:#?}", uniques)?;
