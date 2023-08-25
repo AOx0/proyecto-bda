@@ -6,3 +6,4 @@ dhat-*
 *.csv
 *.lock
 *.json
+results/*
