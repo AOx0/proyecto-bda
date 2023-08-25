@@ -164,10 +164,14 @@ fn main() -> Result<()> {
         let file_name = file.file_name();
         let file_name = file_name.to_str().unwrap();
 
-        if file_name.contains("temp").not() && file_name.contains(".csv") {
+        if file_name.contains("temp").not()
+            && file_name.contains(".csv")
+            && file_name.contains("delitos").not()
+        {
             insert_script.write_all(format!("LOAD DATA LOCAL INFILE '{0}.csv' INTO TABLE {0} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;\n", file_name.trim_end_matches(".csv")).as_bytes())?;
         }
     }
+    insert_script.write_all(format!("LOAD DATA LOCAL INFILE '{0}.csv' INTO TABLE {0} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;\n", "delitos").as_bytes())?;
 
     println!(
         "{:>SPACING$} Wrote to './results/insert.sql' a script to insert all values",
