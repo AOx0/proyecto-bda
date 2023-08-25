@@ -1,28 +1,9 @@
 use std::{collections::HashMap, fs::OpenOptions};
 
 use anyhow::{anyhow, Result};
-use proyecto_bd::*;
+use proyecto_bd::clean::*;
 
 const SPACING: usize = 12;
-
-fn mes_a_int(mes: &str) -> usize {
-    match mes {
-        "NA" => 0,
-        "Enero" => 1,
-        "Febrero" => 2,
-        "Marzo" => 3,
-        "Abril" => 4,
-        "Mayo" => 5,
-        "Junio" => 6,
-        "Julio" => 7,
-        "Agosto" => 8,
-        "Septiembre" => 9,
-        "Octubre" => 10,
-        "Noviembre" => 11,
-        "Diciembre" => 12,
-        _ => 13,
-    }
-}
 
 fn main() -> Result<()> {
     #[cfg(feature = "dhat")]
@@ -61,10 +42,8 @@ fn main() -> Result<()> {
     };
 
     // Hacer que ambos conjuntos de meses sean iguales, para despues tener un solo `mes.csv`
-    uniques.iter_mut().for_each(|(a, b)| {
-        if a.contains("mes") {
-            b.insert("NA".to_string());
-        }
+    uniques.values_mut().for_each(|b| {
+        b.remove("NA");
     });
 
     // Es necesario iterar siempre en el mismo orden, asi que conjelamos en conjunto en un vector
@@ -92,6 +71,8 @@ fn main() -> Result<()> {
     // Reemplazamos todos los valores repetidos por el id
     let (file, mut out) = reader_writer("./results/out_temp.csv", "./results/out.csv")?;
 
+    let mut nulls = vec![false; headers.len()];
+
     out.write_all("id,".as_bytes())?;
     out.write_all(
         headers
@@ -111,7 +92,7 @@ fn main() -> Result<()> {
     for (n, line) in file.lines().skip(1).enumerate() {
         let line = line?;
         let mut values = extract_values(&line);
-        values.insert(0, format!("{n}"));
+        values.insert(0, format!("{}", n + 1));
 
         for (col, value) in values.iter_mut().skip(1).enumerate() {
             for (id, vals) in uniques
@@ -121,9 +102,13 @@ fn main() -> Result<()> {
                 .enumerate()
                 .rev()
             {
-                if value == vals {
-                    *value = format!("{id}");
+                if value == vals && value != "NA" {
+                    *value = format!("{}", id + 1);
                 }
+            }
+            if value == "NA" {
+                *value = format!("NULL");
+                nulls[col] = true;
             }
         }
 
@@ -136,6 +121,7 @@ fn main() -> Result<()> {
         "Status"
     );
 
+    // Escribimos las tablas con los datos de las llaveas foraneas
     for header in headers.iter() {
         if uniques[header.as_str()].is_empty().not() {
             let header_f = if header.contains("mes") {
@@ -154,13 +140,17 @@ fn main() -> Result<()> {
 
             file.write_all(format!("id_{header_f},{header_f}\n").as_bytes())?;
             for (i, value) in uniques[header].iter().enumerate() {
-                file.write_all(format!("{i},{value}\n").as_bytes())?
+                file.write_all(format!("{},{value}\n", i + 1).as_bytes())?
             }
             println!(
                 "{:>SPACING$} Wrote to '{path}' header values {header_f} with fields (id_{header_f}, {header_f})",
                 "Status"
             );
         }
+    }
+
+    for (h, null) in headers.iter().zip(nulls.iter()) {
+        println!("{h}: {null}")
     }
 
     Ok(())
