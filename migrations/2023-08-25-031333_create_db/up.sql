@@ -116,20 +116,3 @@ ALTER TABLE delitos ADD CONSTRAINT fk_id_competencia FOREIGN KEY (id_competencia
 ALTER TABLE delitos ADD CONSTRAINT fk_id_alcaldia_hecho FOREIGN KEY (id_alcaldia_hecho) REFERENCES alcaldia_hecho (id_alcaldia_hecho);
 ALTER TABLE delitos ADD CONSTRAINT fk_id_municipio_hecho FOREIGN KEY (id_municipio_hecho) REFERENCES municipio_hecho (id_municipio_hecho);
 ALTER TABLE delitos ADD CONSTRAINT fk_id_unidad_investigacion FOREIGN KEY (id_unidad_investigacion) REFERENCES unidad_investigacion (id_unidad_investigacion);
-
-
--- Insert with:
-/*
-LOAD DATA LOCAL INFILE './results/agencia.csv' INTO TABLE agencia FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/alcaldia_hecho.csv' INTO TABLE alcaldia_hecho FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/anio_hecho.csv' INTO TABLE anio_hecho FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/anio_inicio.csv' INTO TABLE anio_inicio FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/categoria.csv' INTO TABLE categoria FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/competencia.csv' INTO TABLE competencia FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/delito.csv' INTO TABLE delito FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/fiscalia.csv' INTO TABLE fiscalia FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/mes.csv' INTO TABLE mes FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/municipio_hecho.csv' INTO TABLE municipio_hecho FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/unidad_investigacion.csv' INTO TABLE unidad_investigacion FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-LOAD DATA LOCAL INFILE './results/out.csv' INTO TABLE delitos FIELDS TERMINATED BY ',' ENCLOSED BY '"' IGNORE 1 LINES;
-*/

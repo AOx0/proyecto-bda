@@ -69,7 +69,7 @@ fn main() -> Result<()> {
     );
 
     // Reemplazamos todos los valores repetidos por el id
-    let (file, mut out) = reader_writer("./results/out_temp.csv", "./results/out.csv")?;
+    let (file, mut out) = reader_writer("./results/out_temp.csv", "./results/delitos.csv")?;
 
     let mut nulls = vec![false; headers.len()];
 
@@ -117,7 +117,7 @@ fn main() -> Result<()> {
     }
 
     println!(
-        "{:>SPACING$} Wrote csv with replaced foreing keys to './results/out.csv'",
+        "{:>SPACING$} Wrote csv with replaced foreing keys to './results/delitos.csv'",
         "Status"
     );
 
@@ -149,9 +149,30 @@ fn main() -> Result<()> {
         }
     }
 
-    for (h, null) in headers.iter().zip(nulls.iter()) {
-        println!("{h}: {null}")
+    // for (h, null) in headers.iter().zip(nulls.iter()) {
+    //     println!("{h}: {null}")
+    // }
+
+    let mut insert_script = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open("results/insert.sql")?;
+
+    for file in std::fs::read_dir("./results")? {
+        let file = file?;
+        let file_name = file.file_name();
+        let file_name = file_name.to_str().unwrap();
+
+        if file_name.contains("temp").not() && file_name.contains(".csv") {
+            insert_script.write_all(format!("LOAD DATA LOCAL INFILE '{0}.csv' INTO TABLE {0} FIELDS TERMINATED BY ',' ENCLOSED BY '\"' IGNORE 1 LINES;\n", file_name.trim_end_matches(".csv")).as_bytes())?;
+        }
     }
+
+    println!(
+        "{:>SPACING$} Wrote to './results/insert.sql' a script to insert all values",
+        "Status"
+    );
 
     Ok(())
 }
