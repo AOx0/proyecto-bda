@@ -10,6 +10,7 @@ anyhow = "1.0.72"
 axum = { version = "0.6.20", features = ["macros"] }
 dhat = { version = "0.3.2", optional = true }
 serde = { version = "1.0.186", features = ["derive"] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio"] }
 tokio = { version = "1.32.0", features = ["full"] }
 
 [profile.rdbg]
