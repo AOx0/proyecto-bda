@@ -1,23 +1,39 @@
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router, Server};
+use axum::extract::State;
 use serde::{Deserialize, Serialize};
 use sqlx::mysql:: MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use dotenv::dotenv;
 use std::sync::Arc;
-use anyhow::Result;
+use std::borrow::Cow;
+
 
 #[derive(Serialize, Deserialize)]
-struct Test<'a> {
-    nombre: &'a str,
+struct Test {
+    nombre: Cow<'static, str>,
 }
 
-async fn hello() -> Json<Test<'static>> {
-    Test { nombre: "A" }.into()
+async fn hello(State(state): State<Shared>) -> Result<Json<Test>, Json<Test>> {
+    let row: Result<(i64,), _> = sqlx::query_as("SELECT DISTINCT YEAR(fecha_hecho) FROM delitos")
+        .fetch_one(&state.db).await;
+        
+    match row {
+        Ok((row,)) => Ok(Test { nombre: format!("{row:?}").into() }.into()),
+        Err(err) => Err(Test { nombre: format!("{err:?}").into() }.into())
+    }
+        
+    
 }
 
 #[derive(Clone)]
-struct State {
-    inner: Arc<Inner>
+struct Shared (Arc<Inner>);
+
+impl std::ops::Deref for Shared {
+    type Target = Inner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 struct Inner {
@@ -25,18 +41,18 @@ struct Inner {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     
     let db = dotenv::var("DATABASE_URL").unwrap();
     
-    let state = State {
-        inner: Arc::new( Inner {
+    let state = Shared (
+        Arc::new( Inner {
             db: MySqlPoolOptions::new()
         .max_connections(5)
         .connect(&db).await?
         })
-    };
+    );
     
      let router = Router::new().route("/", get(hello))
         .with_state(state);
