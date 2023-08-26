@@ -107,7 +107,7 @@ fn main() -> Result<()> {
                 }
             }
             if value == "NA" {
-                *value = format!("NULL");
+                *value = "NULL".to_string();
                 nulls[col] = true;
             }
         }

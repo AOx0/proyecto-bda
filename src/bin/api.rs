@@ -17,18 +17,20 @@ struct Test<T: Serialize> {
 async fn hello(
     State(state): State<Shared>,
 ) -> Result<Json<Test<impl Serialize>>, Json<Test<impl Serialize>>> {
-    let row: Result<(i64,), _> = sqlx::query_as("SELECT DISTINCT YEAR(fecha_hecho) FROM delitos")
-        .fetch_one(&state.db)
-        .await;
+    let row: Result<(i64,String), _> = sqlx::query_as(
+        "SELECT COUNT(1),  DATE_FORMAT(CURDATE()- INTERVAL 1 YEAR, '%Y-%m-%d') FROM delitos WHERE fecha_hecho = CURDATE()- INTERVAL 1 YEAR GROUP BY fecha_hecho",
+    )
+    .fetch_one(&state.db)
+    .await;
 
     match row {
-        Ok((row,)) => Ok(Test {
-            nombre: "SELECT DISTINCT YEAR(fecha_hecho) FROM delitos".into(),
+        Ok((row, date)) => Ok(Test {
+            nombre: date.into(),
             resultado: row,
         }
         .into()),
         Err(err) => Err(Test {
-            nombre: "SELECT DISTINCT YEAR(fecha_hecho) FROM delitos".into(),
+            nombre: "Error".into(),
             resultado: err.to_string(),
         }
         .into()),
