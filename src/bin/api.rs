@@ -1,4 +1,4 @@
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router, Server};
 use dotenv::dotenv;
@@ -14,12 +14,15 @@ struct Test<T: Serialize> {
     resultado: T,
 }
 
-async fn hello(
+async fn date(
     State(state): State<Shared>,
+    Path(date): Path<String>,
 ) -> Result<Json<Test<impl Serialize>>, Json<Test<impl Serialize>>> {
     let row: Result<(i64,String), _> = sqlx::query_as(
-        "SELECT COUNT(1),  DATE_FORMAT(CURDATE()- INTERVAL 1 YEAR, '%Y-%m-%d') FROM delitos WHERE fecha_hecho = CURDATE()- INTERVAL 1 YEAR GROUP BY fecha_hecho",
+        "SELECT COUNT(1), DATE_FORMAT(?, '%Y-%m-%d') FROM delitos WHERE fecha_hecho = ? GROUP BY fecha_hecho",
     )
+    .bind(&date)
+    .bind(&date)
     .fetch_one(&state.db)
     .await;
 
@@ -29,11 +32,14 @@ async fn hello(
             resultado: row,
         }
         .into()),
-        Err(err) => Err(Test {
-            nombre: "Error".into(),
-            resultado: err.to_string(),
+        Err(err) => {
+            eprintln!("Error with query 'date' (date: {date}): {err}");
+            Err(Test {
+                nombre: "Error".into(),
+                resultado: "Internal error".to_string(),
+            }
+            .into())
         }
-        .into()),
     }
 }
 
@@ -54,9 +60,11 @@ struct Inner {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let address = std::env::args().nth(1).unwrap_or("[::]:80".to_string());
+
     dotenv().ok();
 
-    let db = dotenv::var("DATABASE_URL").unwrap();
+    let db = dotenv::var("DATABASE_URL")?;
 
     let state = Shared(Arc::new(Inner {
         db: MySqlPoolOptions::new()
@@ -65,9 +73,12 @@ async fn main() -> anyhow::Result<()> {
             .await?,
     }));
 
-    let router = Router::new().route("/", get(hello)).with_state(state);
+    let router = Router::new()
+        .route("/date/:date", get(date))
+        .route("/health", get(|| async { "alive" }))
+        .with_state(state);
 
-    Server::bind(&"[::]:80".parse().unwrap())
+    Server::bind(&address.parse().unwrap())
         .serve(router.into_make_service())
         .await?;
 
