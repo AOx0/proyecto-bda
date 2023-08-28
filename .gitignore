@@ -7,3 +7,4 @@ dhat-*
 *.lock
 *.json
 results/*
+style.css
