@@ -8,17 +8,12 @@
   <body class="flex flex-col w-full h-full bg-white p-5">
     <div class="flex flex-row gap-x-4">
     {% for p in posts %}
-      <div class="flex flex-col w-1/4 bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">
+      <div class="flex flex-col w-full bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">
         <p>{{ p.name }}</p>
         <p class="text-xl font-bold" hx-get="{{ p.method }}" hx-trigger="load">{{ p.content }}</p>
         <p class="text-sm">{{ p.desc }}</p>
       </div>
     {% endfor %}
     </div>
-    <div hx-get="/messages" hx-target="#search-results">
-        Put To Messages
-        <p class="htmx-indicator">Getting..</p>
-    </div>
-    <p id="search-results">Hello, {{ name }}!</p>
   </body>
 </html>
