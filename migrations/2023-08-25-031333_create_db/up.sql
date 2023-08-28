@@ -83,8 +83,8 @@ CREATE TABLE delitos (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     id_anio_hecho INT UNSIGNED DEFAULT NULL,
     id_mes_hecho INT UNSIGNED DEFAULT NULL,
-    fecha_hecho DATE,
-    hora_hecho TIME,
+    fecha_hecho DATE DEFAULT NULL,
+    hora_hecho TIME DEFAULT NULL,
     id_delito INT UNSIGNED NOT NULL,
     id_categoria INT UNSIGNED NOT NULL,
     id_competencia INT UNSIGNED DEFAULT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE delitos (
     id_municipio_hecho INT UNSIGNED DEFAULT NULL,
     latitud FLOAT,
     longitud FLOAT,
-    CONSTRAINT pk_id PRIMARY KEY (id)
+    CONSTRAINT pk_id PRIMARY KEY (id, fecha_hecho, hora_hecho)
 );
 
 ALTER TABLE delitos ADD CONSTRAINT fk_id_delito FOREIGN KEY (id_delito) REFERENCES delito (id_delito);

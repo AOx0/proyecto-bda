@@ -1,6 +1,7 @@
 use axum::extract::{Path, State};
 use axum::routing::get;
-use axum::{Json, Router, Server};
+use axum::{Router, Server};
+use axum_extra::protobuf::Protobuf;
 use dotenv::dotenv;
 use serde::Serialize;
 use sqlx::mysql::MySqlPoolOptions;
@@ -8,16 +9,18 @@ use sqlx::{MySql, Pool};
 use std::borrow::Cow;
 use std::sync::Arc;
 
-#[derive(Serialize)]
-struct Test<T: Serialize> {
-    nombre: Cow<'static, str>,
-    resultado: T,
+#[derive(prost::Message)]
+struct Test {
+    #[prost(string, tag = "1")]
+    nombre: String,
+    #[prost(string, tag = "2")]
+    resultado: String,
 }
 
 async fn date(
     State(state): State<Shared>,
     Path(date): Path<String>,
-) -> Result<Json<Test<impl Serialize>>, Json<Test<impl Serialize>>> {
+) -> Result<Protobuf<Test>, Protobuf<Test>> {
     let row: Result<(i64,String), _> = sqlx::query_as(
         "SELECT COUNT(1), DATE_FORMAT(?, '%Y-%m-%d') FROM delitos WHERE fecha_hecho = ? GROUP BY fecha_hecho",
     )
@@ -29,7 +32,7 @@ async fn date(
     match row {
         Ok((row, date)) => Ok(Test {
             nombre: date.into(),
-            resultado: row,
+            resultado: format!("{}", row),
         }
         .into()),
         Err(err) => {
