@@ -1,7 +1,9 @@
 use std::{collections::HashMap, fs::OpenOptions};
 
 use anyhow::{anyhow, Result};
-use proyecto_bd::clean::*;
+
+mod clean;
+use clean::*;
 
 const SPACING: usize = 12;
 

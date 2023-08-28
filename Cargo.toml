@@ -1,3 +1,8 @@
+[workspace]
+members = [
+  "clean/"
+]
+
 [package]
 name = "proyecto_bd"
 version = "0.1.0"

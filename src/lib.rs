@@ -9,8 +9,6 @@
 #[global_allocator]
 pub static ALLOC: dhat::Alloc = dhat::Alloc;
 
-pub mod clean;
-
 #[must_use]
 pub fn test() -> &'static str {
     "Hello World"
