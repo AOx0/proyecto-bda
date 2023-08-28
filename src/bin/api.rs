@@ -1,11 +1,20 @@
+use askama::Template;
 use axum::extract::{Path, State};
+use axum::http::{header, HeaderName};
+use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::get;
-use axum::{Json, Router, Server};
+use axum::{Router, Server};
 use dotenv::dotenv;
 use serde::Serialize;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
+
+const JS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
+    AppendHeaders([(header::CONTENT_TYPE, "text/javascript")]);
+
+const CSS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
+    AppendHeaders([(header::CONTENT_TYPE, "text/css")]);
 
 #[derive(Serialize)]
 struct Test {
@@ -13,42 +22,92 @@ struct Test {
     resultado: String,
 }
 
-async fn date(
-    State(state): State<Shared>,
-    Path(date): Path<String>,
-) -> Result<Json<Test>, Json<Test>> {
-    let invalid = date.chars().find(|a| !(a.is_digit(10) || a == &'-')).is_some();
-    if invalid {
-        return Err(
-            Test {
-                nombre: "Error".to_string(),
-                resultado: format!("Invalid date '{date}'")
-            }.into()
-        );
+struct Content {
+    name: &'static str,
+    content: &'static str,
+    desc: &'static str,
+    method: &'static str,
+}
+
+#[derive(Template)]
+#[template(path = "hello.html")]
+struct Hello<'a> {
+    name: &'a str,
+    posts: &'a [Content],
+}
+
+async fn root() -> Hello<'static> {
+    Hello {
+        name: "world",
+        posts: &[
+            Content {
+                name: "Muertos",
+                content: "+12,503",
+                desc: "+0.12 de la semana pasada",
+                method: "/date/2023-02-23",
+            },
+            Content {
+                name: "Robos",
+                content: "+2,321",
+                desc: "Robos armados",
+                method: "/date/2023-02-24",
+            },
+            Content {
+                name: "Homicidios",
+                content: "+34%",
+                desc: "En esta semana",
+                method: "/date/2023-02-25",
+            },
+            Content {
+                name: "Arrestos",
+                content: "+43%",
+                desc: "En esta semana",
+                method: "/date/2023-02-26",
+            },
+        ],
     }
-    
-    let row: Result<(i64,String), _> = sqlx::query_as(
-        "SELECT COUNT(1), DATE_FORMAT(?, '%Y-%m-%d') FROM delitos WHERE fecha_hecho = ? GROUP BY fecha_hecho",
+}
+
+async fn htmx() -> impl IntoResponse {
+    (
+        JS_HEADER,
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/htmx.min.js")),
     )
-    .bind(&date)
-    .bind(&date)
-    .fetch_one(&state.db)
-    .await;
+}
+
+async fn alpine() -> impl IntoResponse {
+    (
+        JS_HEADER,
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/cdn.min.js")),
+    )
+}
+
+async fn tailwind() -> impl IntoResponse {
+    (
+        CSS_HEADER,
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/style.css")),
+    )
+}
+
+async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
+    let invalid = date
+        .chars()
+        .find(|a| !(a.is_digit(10) || a == &'-'))
+        .is_some();
+
+    if invalid {
+        return format!("Invalid date '{date}'");
+    }
+
+    let row: Result<(i64,), _> =
+        sqlx::query_as("SELECT COUNT(1) FROM delitos WHERE fecha_hecho = ?")
+            .bind(&date)
+            .fetch_one(&state.db)
+            .await;
 
     match row {
-        Ok((row, date)) => Ok(Test {
-            nombre: date.into(),
-            resultado: format!("{}", row),
-        }
-        .into()),
-        Err(err) => {
-            eprintln!("Error with query 'date' (date: {date}): {err}");
-            Err(Test {
-                nombre: "Error".into(),
-                resultado: "Internal error".to_string(),
-            }
-            .into())
-        }
+        Ok((row,)) => format!("+{}", row),
+        Err(_) => "INTERR".to_string(),
     }
 }
 
@@ -83,8 +142,12 @@ async fn main() -> anyhow::Result<()> {
     }));
 
     let router = Router::new()
-        .route("/date/:date", get(date))
+        .route("/", get(root))
+        .route("/alpine.js", get(alpine))
+        .route("/tailwind.css", get(tailwind))
+        .route("/htmx.js", get(htmx))
         .route("/health", get(|| async { "alive" }))
+        .route("/date/:date", get(date))
         .with_state(state);
 
     Server::bind(&address.parse().unwrap())
