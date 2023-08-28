@@ -4,6 +4,7 @@ use axum::http::{header, HeaderName};
 use axum::response::{AppendHeaders, IntoResponse};
 use axum::routing::get;
 use axum::{Router, Server};
+use chrono::prelude::*;
 use dotenv::dotenv;
 use serde::Serialize;
 use sqlx::mysql::MySqlPoolOptions;
@@ -42,27 +43,27 @@ async fn root() -> Hello<'static> {
         posts: &[
             Content {
                 name: "Muertos",
-                content: "+12,503",
+                content: "",
                 desc: "+0.12 de la semana pasada",
                 method: "/date/2023-02-23",
             },
             Content {
                 name: "Robos",
-                content: "+2,321",
+                content: "",
                 desc: "Robos armados",
                 method: "/date/2023-02-24",
             },
             Content {
                 name: "Homicidios",
-                content: "+34%",
+                content: "",
                 desc: "En esta semana",
                 method: "/date/2023-02-25",
             },
             Content {
-                name: "Arrestos",
-                content: "+43%",
-                desc: "En esta semana",
-                method: "/date/2023-02-26",
+                name: "Carpetas",
+                content: "",
+                desc: "En esta año",
+                method: "/date/upnow",
             },
         ],
     }
@@ -99,8 +100,8 @@ async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
         return format!("Invalid date '{date}'");
     }
 
-    let row: Result<(i64,), _> =
-        sqlx::query_as("SELECT COUNT(1) FROM delitos WHERE fecha_hecho = ?")
+    let row: Result<(String,), _> =
+        sqlx::query_as("SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE fecha_hecho = ?), 0)")
             .bind(&date)
             .fetch_one(&state.db)
             .await;
@@ -108,6 +109,26 @@ async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
     match row {
         Ok((row,)) => format!("+{}", row),
         Err(_) => "INTERR".to_string(),
+    }
+}
+
+async fn untilnow(State(state): State<Shared>) -> String {
+    let utc: DateTime<Utc> = Utc::now();
+    let year = utc.format("%Y").to_string();
+
+    let row: Result<(String,), _> = sqlx::query_as(
+        "SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE YEAR(fecha_hecho) = ?), 0)",
+    )
+    .bind(&year)
+    .fetch_one(&state.db)
+    .await;
+
+    match row {
+        Ok((row,)) => format!("+{}", row),
+        Err(err) => {
+            println!("Error: {err}");
+            "INTERR".to_string()
+        },
     }
 }
 
@@ -148,6 +169,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/htmx.js", get(htmx))
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
+        .route("/date/upnow", get(untilnow))
         .with_state(state);
 
     Server::bind(&address.parse().unwrap())
