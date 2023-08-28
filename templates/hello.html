@@ -10,7 +10,7 @@
     {% for p in posts %}
       <div class="flex flex-col w-1/4 bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">
         <p>{{ p.name }}</p>
-        <p class="text-xl font-bold">{{ p.content }}</p>
+        <p class="text-xl font-bold" hx-get="{{ p.method }}" hx-trigger="load">{{ p.content }}</p>
         <p class="text-sm">{{ p.desc }}</p>
       </div>
     {% endfor %}
