@@ -6,6 +6,7 @@
     <script src="/alpine.js" defer></script>
   </head>
   <body class="flex flex-col w-full h-full bg-white p-5">
+    <div id="mapa-1" hx-get="/mapa/1"/>
     <div class="flex flex-row gap-x-4">
     {% for p in posts %}
       <div class="flex flex-col w-full bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">

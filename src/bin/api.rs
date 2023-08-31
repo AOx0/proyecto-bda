@@ -17,6 +17,8 @@ const JS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
 const CSS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
     AppendHeaders([(header::CONTENT_TYPE, "text/css")]);
 
+const SVG_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
+    AppendHeaders([(header::CONTENT_TYPE, "image/svg+xml")]);
 #[derive(Serialize)]
 struct Test {
     nombre: String,
@@ -33,35 +35,33 @@ struct Content {
 #[derive(Template)]
 #[template(path = "hello.html")]
 struct Hello<'a> {
-    name: &'a str,
     posts: &'a [Content],
 }
 
 async fn root() -> Hello<'static> {
     Hello {
-        name: "world",
         posts: &[
             Content {
                 name: "Muertos",
-                content: "",
+                content: " ",
                 desc: "+0.12 de la semana pasada",
                 method: "/date/2023-02-23",
             },
             Content {
                 name: "Robos",
-                content: "",
+                content: " ",
                 desc: "Robos armados",
                 method: "/date/2023-02-24",
             },
             Content {
                 name: "Homicidios",
-                content: "",
+                content: " ",
                 desc: "En esta semana",
                 method: "/date/2023-02-25",
             },
             Content {
                 name: "Carpetas",
-                content: "",
+                content: " ",
                 desc: "En esta año",
                 method: "/date/upnow",
             },
@@ -91,10 +91,7 @@ async fn tailwind() -> impl IntoResponse {
 }
 
 async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
-    let invalid = date
-        .chars()
-        .find(|a| !(a.is_digit(10) || a == &'-'))
-        .is_some();
+    let invalid = date.chars().any(|a| !(a.is_ascii_digit() || a == '-'));
 
     if invalid {
         return format!("Invalid date '{date}'");
@@ -128,7 +125,7 @@ async fn untilnow(State(state): State<Shared>) -> String {
         Err(err) => {
             println!("Error: {err}");
             "INTERR".to_string()
-        },
+        }
     }
 }
 
@@ -141,6 +138,16 @@ impl std::ops::Deref for Shared {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
+}
+
+async fn mapa(Path(n): Path<usize>) -> impl IntoResponse {
+    (
+        SVG_HEADER,
+        format!(
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/MXfmt.svg")),
+            n
+        ),
+    )
 }
 
 struct Inner {
@@ -167,6 +174,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/alpine.js", get(alpine))
         .route("/tailwind.css", get(tailwind))
         .route("/htmx.js", get(htmx))
+        .route("/mapa/:n", get(mapa))
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
         .route("/date/upnow", get(untilnow))
