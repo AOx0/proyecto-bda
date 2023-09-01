@@ -2,11 +2,11 @@ use askama::Template;
 use axum::extract::{Path, State};
 use axum::http::{header, HeaderName};
 use axum::response::{AppendHeaders, IntoResponse};
-use axum::routing::get;
-use axum::{Router, Server};
+use axum::routing::{get, post};
+use axum::{Json, Router, Server};
 use chrono::prelude::*;
 use dotenv::dotenv;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
@@ -83,6 +83,23 @@ async fn alpine() -> impl IntoResponse {
     )
 }
 
+async fn mapa(Path(n): Path<usize>) -> impl IntoResponse {
+    (
+        SVG_HEADER,
+        format!(
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/MXfmt.svg")),
+            n
+        ),
+    )
+}
+
+async fn scripts() -> impl IntoResponse {
+    (
+        JS_HEADER,
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/script.js")),
+    )
+}
+
 async fn tailwind() -> impl IntoResponse {
     (
         CSS_HEADER,
@@ -107,6 +124,90 @@ async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
         Ok((row,)) => format!("+{}", row),
         Err(_) => "INTERR".to_string(),
     }
+}
+
+#[derive(Serialize, Debug, Default)]
+struct MapaPorcetajes {
+    total: u64,
+    valores: Vec<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SolicitudMapaPorcentajes {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
+    #[serde(default = "max_year")]
+    annio_final: u16,
+    #[serde(default)]
+    categorias: Vec<u16>,
+}
+
+fn min_year() -> u16 {
+    2016
+}
+fn max_year() -> u16 {
+    2023
+}
+
+/// TODO: This seems expensive, benchmark and optimize 
+///
+/// # Panics
+///
+/// Panics if .
+async fn mapa_porcentajes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudMapaPorcentajes>,
+) -> Json<MapaPorcetajes> {
+    let SolicitudMapaPorcentajes {
+        annio_inicio,
+        annio_final,
+        categorias,
+    } = sol;
+
+    let (total,): (i64,) = if categorias.is_empty() {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';")) 
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    } else {
+         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';",
+            categorias    
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    };
+    
+    let resultados: Vec<(i64,)> = if categorias.is_empty() {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    } else {
+         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
+            categorias    
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    };
+
+    
+
+
+    MapaPorcetajes {
+        total: u64::try_from(total).unwrap(),
+        valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+    }
+    .into()
 }
 
 async fn untilnow(State(state): State<Shared>) -> String {
@@ -140,16 +241,6 @@ impl std::ops::Deref for Shared {
     }
 }
 
-async fn mapa(Path(n): Path<usize>) -> impl IntoResponse {
-    (
-        SVG_HEADER,
-        format!(
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/MXfmt.svg")),
-            n
-        ),
-    )
-}
-
 struct Inner {
     db: Pool<MySql>,
 }
@@ -174,9 +265,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/alpine.js", get(alpine))
         .route("/tailwind.css", get(tailwind))
         .route("/htmx.js", get(htmx))
+        .route("/script.js", get(scripts))
         .route("/mapa/:n", get(mapa))
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
+        .route("/map_percent", post(mapa_porcentajes))
         .route("/date/upnow", get(untilnow))
         .with_state(state);
 

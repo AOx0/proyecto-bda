@@ -28,3 +28,20 @@ FROM (
 JOIN alcaldia_hecho 
 ON (alcaldia_hecho.id_alcaldia_hecho = res.id_alcaldia_hecho) 
 ORDER BY Total DESC; 
+
+
+SELECT 
+    alcaldia_hecho, 
+    Total 
+FROM (
+    SELECT 
+        id_alcaldia_hecho, 
+        COUNT(*) as Total 
+    FROM delitos 
+       WHERE YEAR(fecha_hecho) = 2023 
+         AND id_categoria IN (1) 
+    GROUP BY id_alcaldia_hecho
+) AS res 
+JOIN alcaldia_hecho 
+ON (alcaldia_hecho.id_alcaldia_hecho = res.id_alcaldia_hecho) 
+ORDER BY Total DESC; 
