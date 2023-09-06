@@ -32,10 +32,16 @@ struct Content {
     method: &'static str,
 }
 
+struct Section {
+    name: &'static str,
+    href: &'static str
+}
+
 #[derive(Template)]
 #[template(path = "hello.html")]
 struct Hello<'a> {
     posts: &'a [Content],
+    sects: &'a [Section]
 }
 
 async fn root() -> Hello<'static> {
@@ -66,6 +72,12 @@ async fn root() -> Hello<'static> {
                 method: "/date/upnow",
             },
         ],
+        sects: &[
+            Section {
+                name: "Zonas calientes",
+                href: "#"
+            }
+        ]
     }
 }
 
