@@ -1,7 +1,7 @@
-function load_map_data() {
-  let data = {}
-  
+function load_map_data1(data) {
   console.log('Fetching')
+  console.log(JSON.stringify(data))
+  
   fetch("/map_percent",
     {
       method: "POST",
@@ -12,7 +12,24 @@ function load_map_data() {
     }
   )
     .then((response) => response.json())
-    .then((json) => update_map_data(json));
+    .then((json) => update_map_data(1, json));
+}
+
+function load_map_data2(data) {
+  console.log('Fetching')
+  console.log(JSON.stringify(data))
+  
+  fetch("/map_percent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => update_map_data(2, json));
 }
 
 function calculateMean(numbers) {
@@ -65,8 +82,8 @@ function calculateProbabilityLessThan(x, mean, stdDeviation) {
   return probability;
 }
 
-function update_map_data(data) {
-  console.log('Updating')
+function update_map_data(n, data) {
+  console.log(`Updating ${n} with ${data.total}`)
   let vals = data.valores.map((v) => v/data.total);
 
   let r = calculateStandardDeviation(vals);
@@ -77,7 +94,7 @@ function update_map_data(data) {
     if (i+1 != 4 && i+1 != 8) {
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
       let color = `rgba(255,0,0, ${color2})`
-      document.getElementById(`1-${i+1}`).style.fill = color
+      document.getElementById(`${n}-${i+1}`).style.fill = color
     }
   }
 }
