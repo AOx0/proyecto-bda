@@ -93,7 +93,7 @@ function update_map_data(n, data) {
     // There's no map zone for undefined areas and outside the city
     if (i+1 != 4 && i+1 != 8) {
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
-      let color = `rgba(255,0,0, ${color2})`
+      let color = `rgba(17, 24, 39, ${color2})`
       document.getElementById(`${n}-${i+1}`).style.fill = color
     }
   }
