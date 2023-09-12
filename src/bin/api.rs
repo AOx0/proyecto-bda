@@ -34,14 +34,14 @@ struct Content {
 
 struct Section {
     name: &'static str,
-    href: &'static str
+    href: &'static str,
 }
 
 #[derive(Template)]
 #[template(path = "hello.html")]
 struct Hello<'a> {
     posts: &'a [Content],
-    sects: &'a [Section]
+    sects: &'a [Section],
 }
 
 async fn root() -> Hello<'static> {
@@ -72,12 +72,10 @@ async fn root() -> Hello<'static> {
                 method: "/date/upnow",
             },
         ],
-        sects: &[
-            Section {
-                name: "Zonas calientes",
-                href: "#"
-            }
-        ]
+        sects: &[Section {
+            name: "Zonas calientes",
+            href: "#",
+        }],
     }
 }
 
@@ -161,7 +159,7 @@ fn max_year() -> u16 {
     2023
 }
 
-/// TODO: This seems expensive, benchmark and optimize 
+/// TODO: This seems expensive, benchmark and optimize
 ///
 /// # Panics
 ///
@@ -182,8 +180,8 @@ async fn mapa_porcentajes(
             .await
             .unwrap()
     } else {
-         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';",
-            categorias    
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';",
+            categorias
                 .iter()
                 .map(|id| format!("{id}"))
                 .collect::<Vec<_>>()
@@ -193,15 +191,15 @@ async fn mapa_porcentajes(
             .await
             .unwrap()
     };
-    
+
     let resultados: Vec<(i64,)> = if categorias.is_empty() {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
             .fetch_all(&state.db)
             .await
             .unwrap()
     } else {
-         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
-            categorias    
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
+            categorias
                 .iter()
                 .map(|id| format!("{id}"))
                 .collect::<Vec<_>>()
@@ -211,9 +209,6 @@ async fn mapa_porcentajes(
             .await
             .unwrap()
     };
-
-    
-
 
     MapaPorcetajes {
         total: u64::try_from(total).unwrap(),
