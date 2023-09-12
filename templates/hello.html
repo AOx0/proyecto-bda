@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+ <html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/tailwind.css" rel="stylesheet">
+    <script src="/htmx.js"></script>
+    <script src="/alpine.js" defer></script>
+    <script src="/script.js"></script>
+    <style>
+    
+     path:hover {
+        stroke-width: 6px;
+     }
+     path {
+        transition: all 0.2s ease-in-out 0s;
+        stroke-width: 0px;   
+     }
+     text {
+        pointer-events: none;
+     }
+    </style>
+  </head>
+  <body class="flex flex-row flex-grow gap-y-4 bg-white min-h-screen h-full w-screen">
+    <aside class="flex flex-grow w-1/5 p-5 bg-gray-200 min-h-screen">
+      <nav class="flex space-x-2 flex-col space-x-0 space-y-1 min-h-full h-full">
+        <p class="text-2xl font-bold">Carpetas de Investigación</p>
+        {% for s in sects %}
+        <a class="inline-flex items-center rounded-md text-sm font-medium hover:text-accent-foreground h-9 px-4 py-2 hover:underline justify-start" href="{{ s.href }}">{{ s.name }}</a>
+        {% endfor %}
+      </nav>
+    </aside>
+    <div class="w-4/5 flex flex-col gap-y-4 bg-white p-5 h-full">
+      <div class="flex flex-row gap-x-4">
+      {% for p in posts %}
+        <div class="flex flex-col w-full bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">
+          <p>{{ p.name }}</p>
+          <p class="text-xl font-bold" hx-get="{{ p.method }}" hx-trigger="load">{{ p.content }}</p>
+          <p class="text-sm">{{ p.desc }}</p>
+        </div>
+      {% endfor %}
+      </div>
+      <div  x-data="{ data: { annio_inicio: 2023 } }" class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full border rounded p-5">
+        <div hx-get="/mapa/1" hx-trigger="load" class="c-block justify-items-center flex w-full md:w-1/3 h-full">
+        </div>
+        <div class="min-h-full min-w-2/3 md:w-2/3">
+          <p class="text-xl font-bold">Miguel Hidalgo</p>
+        </div>
+      </div>
+      <div  x-data="{ data: { annio_inicio: 2016 } }" class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full border rounded p-5">
+        <div hx-get="/mapa/2" hx-trigger="load" class="c-block justify-items-center flex w-full md:w-1/3 h-full">
+        </div>
+        <div class="min-h-full min-w-2/3 md:w-2/3">
+          <p class="text-xl font-bold">Miguel Hidalgo</p>
+        </div>
+      </div>
+      <!--
+      <div  x-data="{ data: { annio_inicio: 2016 } }" class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-1/2 border rounded p-5">
+        <div hx-get="/mapa/2" hx-trigger="load" class="c-block justify-items-center flex w-full md:w-1/3 h-full">
+        </div>
+        <div class="min-h-full min-w-2/3 md:w-2/3">
+          <p class="text-xl">Miguel Hidalgo</p>
+        </div>
+      </div>
+      -->
+    </div>
+  </body>
+</html>
