@@ -1,6 +1,6 @@
-function change_map_info(id) {
-  let name = document.getElementById(`{id}-name`);
-  name.innerHTML = `<p hx-trigger="load" hx-get="/health"></p>`
+function change_map_info(id, edo) {
+  let name = document.getElementById(`${id}-name`);
+  name.innerHTML = `<p hx-trigger="load" hx-get="/health">${edo}</p>`
 }
 
 function load_map_data1(data) {
