@@ -25,10 +25,33 @@ function change_map_info(id, edo) {
 }
 
 function load_map_data(data, cfg) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
   console.log('Fetching')
   console.log(JSON.stringify(data))
 
-  update_map_data(cfg.num, {"total":2000,"valores":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]});
+  update_map_data(cfg.num, { "total": 2000, "valores": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] });
   fetch(cfg.endpoint,
     {
       method: "POST",
