@@ -57,12 +57,12 @@ diesel::table! {
 }
 
 diesel::table! {
-    delitos (id, fecha_hecho, hora_hecho) {
+    delitos (id) {
         id -> Unsigned<Integer>,
         id_anio_hecho -> Nullable<Unsigned<Integer>>,
         id_mes_hecho -> Nullable<Unsigned<Integer>>,
-        fecha_hecho -> Date,
-        hora_hecho -> Time,
+        fecha_hecho -> Nullable<Date>,
+        hora_hecho -> Nullable<Time>,
         id_delito -> Unsigned<Integer>,
         id_categoria -> Unsigned<Integer>,
         id_competencia -> Nullable<Unsigned<Integer>>,

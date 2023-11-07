@@ -3,11 +3,11 @@ function change_map_info(id, edo) {
   name.innerHTML = `<p hx-trigger="load" hx-get="/health">${edo}</p>`
 }
 
-function load_map_data1(data) {
+function load_map_data(data, cfg) {
   console.log('Fetching')
   console.log(JSON.stringify(data))
   
-  fetch("/map_percent",
+  fetch(cfg.endpoint,
     {
       method: "POST",
       headers: {
@@ -17,24 +17,7 @@ function load_map_data1(data) {
     }
   )
     .then((response) => response.json())
-    .then((json) => update_map_data(1, json));
-}
-
-function load_map_data2(data) {
-  console.log('Fetching')
-  console.log(JSON.stringify(data))
-  
-  fetch("/map_percent",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data)
-    }
-  )
-    .then((response) => response.json())
-    .then((json) => update_map_data(2, json));
+    .then((json) => update_map_data(cfg.num, json));
 }
 
 function calculateMean(numbers) {
