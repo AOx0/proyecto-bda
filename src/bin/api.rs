@@ -11,6 +11,8 @@ use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
 
+// TODO: Esto es un mega haack exagerado. Deberia de ser el id directamente el año
+const OFFSET: u16 = 1947;
 const JS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
     AppendHeaders([(header::CONTENT_TYPE, "text/javascript")]);
 
@@ -172,15 +174,18 @@ async fn mapa_porcentajes(
         annio_inicio,
         annio_final,
         categorias,
-    } = sol;
+    } = dbg!(sol);
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
 
     let (total,): (i64,) = if categorias.is_empty() {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';")) 
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
             .fetch_one(&state.db)
             .await
             .unwrap()
     } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31';",
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
@@ -193,12 +198,12 @@ async fn mapa_porcentajes(
     };
 
     let resultados: Vec<(i64,)> = if categorias.is_empty() {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
             .fetch_all(&state.db)
             .await
             .unwrap()
     } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND fecha_hecho BETWEEN '{annio_inicio}-01-01' AND '{annio_final}-12-31' AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
@@ -220,13 +225,13 @@ async fn mapa_porcentajes(
 async fn untilnow(State(state): State<Shared>) -> String {
     let utc: DateTime<Utc> = Utc::now();
     let year = utc.format("%Y").to_string();
+    let year: u16 = year.parse().unwrap();
 
-    let row: Result<(String,), _> = sqlx::query_as(
-        "SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE YEAR(fecha_hecho) = ?), 0)",
-    )
-    .bind(&year)
-    .fetch_one(&state.db)
-    .await;
+    let row: Result<(String,), _> =
+        sqlx::query_as("SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = ?), 0)")
+            .bind(&dbg!(year - OFFSET))
+            .fetch_one(&state.db)
+            .await;
 
     match row {
         Ok((row,)) => format!("+{}", row),
