@@ -21,13 +21,14 @@ const NOMBRES = [
 
 function change_map_info(id, edo) {
   let name = document.getElementById(`${id}-name`);
-  name.innerHTML = `<p hx-trigger="load" hx-get="/health">${NOMBRES[edo-1]}</p>`
+  name.innerHTML = `<p hx-trigger="load" hx-get="/health">${NOMBRES[edo - 1]}</p>`
 }
 
 function load_map_data(data, cfg) {
   console.log('Fetching')
   console.log(JSON.stringify(data))
 
+  update_map_data(cfg.num, {"total":2000,"valores":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]});
   fetch(cfg.endpoint,
     {
       method: "POST",
