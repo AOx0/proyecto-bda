@@ -76,7 +76,7 @@ async fn root() -> Hello<'static> {
         ],
         sects: &[Section {
             name: "Zonas calientes",
-            href: "#",
+            href: "#zonas-calientes",
         }],
     }
 }
@@ -92,6 +92,13 @@ async fn alpine() -> impl IntoResponse {
     (
         JS_HEADER,
         include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/cdn.min.js")),
+    )
+}
+
+async fn charts() -> impl IntoResponse {
+    (
+        JS_HEADER,
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/chart.js")),
     )
 }
 
@@ -277,6 +284,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/alpine.js", get(alpine))
         .route("/tailwind.css", get(tailwind))
         .route("/htmx.js", get(htmx))
+        .route("/chart.js", get(charts))
         .route("/script.js", get(scripts))
         .route("/mapa/:n", get(mapa))
         .route("/health", get(|| async { "alive" }))

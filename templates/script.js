@@ -19,6 +19,66 @@ const NOMBRES = [
   "Xochimilco",
 ];
 
+const CATEGORIAS = [
+  "Delito de bajo impacto",
+  "Feminicidio",
+  "Hecho no delictivo",
+  "Homicidio doloso",
+  "Lesiones dolosas por disparo de arma de fuego",
+  "Plagio o secuestro",
+  "Robo a casa habitación con violencia",
+  "Robo a cuentahabiente saliendo del cajero con violencia",
+  "Robo a negocio con violencia",
+  "Robo a pasajero a bordo de microbus con y sin violencia",
+  "Robo a pasajero a bordo de taxi con violencia",
+  "Robo a pasajero a bordo del metro con y sin violencia",
+  "Robo a repartidor con y sin violencia",
+  "Robo a transeunte en vía pública con y sin violencia",
+  "Robo a transportista con y sin violencia",
+  "Robo de vehículo con y sin violencia",
+  "Secuestro",
+  "Violación",
+];
+
+function draw_pinned_chart(num, pinned) {
+  const ctx = document.getElementById(`pinned-${num}`);
+
+  const data = {
+    "municipios": pinned
+  };
+
+  fetch("per_month_and_place",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => update_map_data(cfg.num, json));
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      datasets: [{
+        label: 'Incidentes',
+        data: [12, 19, 3, 5, 2, 3],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
 function change_map_info(id, edo) {
   let name = document.getElementById(`${id}-name`);
   name.innerHTML = `<p hx-trigger="load" hx-get="/health">${NOMBRES[edo - 1]}</p>`

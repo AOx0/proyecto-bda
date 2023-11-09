@@ -7,6 +7,7 @@
   <link href="/tailwind.css" rel="stylesheet">
   <script src="/htmx.js"></script>
   <script src="/alpine.js" defer></script>
+  <script src="/chart.js" defer></script>
   <script src="/script.js"></script>
   <style>
     path:hover {
@@ -25,7 +26,7 @@
 </head>
 
 <body class="flex flex-row flex-grow gap-y-4 bg-white min-h-screen h-full w-screen">
-  <aside class="flex flex-grow w-1/5 p-5 bg-gray-200 min-h-screen">
+  <aside class="flex flex-grow w-1/6 p-5 bg-gray-200 min-h-screen">
     <nav class="flex space-x-2 flex-col space-x-0 space-y-1 min-h-full h-full">
       <p class="text-2xl font-bold">Carpetas de Investigación</p>
       {% for s in sects %}
@@ -34,7 +35,7 @@
       {% endfor %}
     </nav>
   </aside>
-  <div class="w-4/5 flex flex-col gap-y-4 bg-white p-5 h-full">
+  <div class="w-5/6 flex flex-col gap-y-4 bg-white p-5 h-full">
     <div class="flex flex-row gap-x-4">
       {% for p in posts %}
       <div class="flex flex-col w-full bg-gray-{{ 500 + (loop.index * 100) }} rounded text-white p-2">
@@ -44,8 +45,10 @@
       </div>
       {% endfor %}
     </div>
-    <section x-data="{ data: { annio_inicio: 2023, annio_final: 2023, pinned: [] } }" id="zonas-calientes"
-      class="flex flex-col p-3">
+    <section
+      x-init="$watch('pinned', value => console.log(value));$watch('data', value => load_map_data(data, { num: 1, endpoint: '/map_percent' }))"
+      x-data="{ data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, pinned: [], num: 1 }"
+      id="zonas-calientes" class="flex flex-col p-3">
       <h1 class="text-3xl font-bold">Zonas Calientes</h1>
       <div class="flex flex-col w-1/2 ml-5 pb-5 gap-y-1">
         <div class="flex flex-row gap-x-2">
@@ -58,12 +61,99 @@
           <input x-on:change="load_map_data(data, { num: 1, endpoint: '/map_percent' })" id="ainit-1"
             x-model.number="data['annio_inicio']" type="number" min="2016" max="2023" step="1" value="2016" />
         </div>
+        <div class="relative">
+          <div class="inline-block relative">
+            <input type="checkbox" id="dropdown" class="hidden">
+            <label for="dropdown" class="cursor-pointer text-gray-700">Select Options</label>
+            <div style="height: 250pt;"
+              class="h-1/3 overflow-y-scroll absolute mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden"
+              id="dropdown-content">
+              <label class="block p-2">
+                <input value="1" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Delito de bajo impacto
+              </label>
+              <label class="block p-2">
+                <input value="3" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Hecho no delictivo
+              </label>
+              <label class="block p-2">
+                <input value="4" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Homicidio doloso
+              </label>
+              <label class="block p-2">
+                <input value="5" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Lesiones dolosas por disparo de arma de fuego
+              </label>
+              <label class="block p-2">
+                <input value="6" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Plagio o secuestro
+              </label>
+              <label class="block p-2">
+                <input value="7" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a casa habitación con violencia
+              </label>
+              <label class="block p-2">
+                <input value="8" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a cuentahabiente saliendo del cajero con violencia
+              </label>
+              <label class="block p-2">
+                <input value="9" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a negocio con violencia
+              </label>
+              <label class="block p-2">
+                <input value="10" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a pasajero a bordo de microbus con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="11" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a pasajero a bordo de taxi con violencia
+              </label>
+              <label class="block p-2">
+                <input value="12" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a pasajero a bordo del metro con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="13" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a repartidor con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="14" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a transeunte en vía pública con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="15" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo a transportista con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="16" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Robo de vehículo con y sin violencia
+              </label>
+              <label class="block p-2">
+                <input value="17" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Secuestro
+              </label>
+              <label class="block p-2">
+                <input value="18" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
+                Violación
+              </label>
+            </div>
+          </div>
+        </div>
+        <script>
+          const dropdownCheckbox = document.getElementById('dropdown');
+          const dropdownContent = document.getElementById('dropdown-content');
+
+          dropdownCheckbox.addEventListener('click', () => {
+            dropdownContent.classList.toggle('hidden');
+          });
+        </script>
       </div>
       <div class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full border rounded p-5">
         <div hx-get="/mapa/1" hx-trigger="load" class="c-block justify-items-center flex w-full md:w-1/3 h-full">
         </div>
         <div class="min-h-full min-w-2/3 md:w-2/3">
           <p id="1-name" class="text-xl font-bold">Miguel Hidalgo</p>
+          <canvas id="pinned-1"></canvas>
         </div>
       </div>
     </section>
