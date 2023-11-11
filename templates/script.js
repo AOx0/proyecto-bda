@@ -40,42 +40,57 @@ const CATEGORIAS = [
   "Violación",
 ];
 
-function draw_pinned_chart(num, pinned) {
-  const ctx = document.getElementById(`pinned-${num}`);
+function init_draw_pinned_chart(num, data, pinned) {
 
-  const data = {
-    "municipios": pinned
+  const dat = {
+    "alcaldias": pinned,
+    "categorias": data["categorias"],
+    "annio_inicio": data["annio_inicio"],
+    "annio_final": data["annio_final"],
   };
 
-  fetch("per_month_and_place",
+  fetch("c_por_mes",
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(dat)
     }
   )
     .then((response) => response.json())
-    .then((json) => update_map_data(cfg.num, json));
+    .then((json) => {
+    const ctx = document.getElementById(`pinned-${num}`);
 
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-      datasets: [{
-        label: 'Incidentes',
-        data: [12, 19, 3, 5, 2, 3],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
+
+    if( window.myBar===undefined) {
+      window.myBar = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: json["meses"],
+          datasets: json["valores"].map((e, i) => {return {
+            label: NOMBRES[pinned[i]-1],
+            data: e,
+            borderWidth: 1
+          };}) 
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
         }
-      }
-    }
+      });
+    } else {
+      window.myBar.data.datasets = json["valores"].map((e, i) => {return {
+            label: NOMBRES[pinned[i]-1],
+            data: e,
+            borderWidth: 1
+          };});
+      window.myBar.data.labels = json["meses"];
+      window.myBar.update();
+    }    
   });
 }
 

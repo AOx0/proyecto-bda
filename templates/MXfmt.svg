@@ -90,7 +90,7 @@
          style="fill:#cddae0;fill-opacity:1;fill-rule:evenodd;stroke:rgb(255,255,255);stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
       <path
          onmouseover="change_map_info({0},10)"
-         x-on:click="if (pinned.includes(1)) {{ pinned.splice(pinned.indexOf(1), 1); }} else {{ pinned.push(1)  }}"
+         x-on:click="if (pinned.includes(10)) {{ pinned.splice(pinned.indexOf(10), 1); }} else {{ pinned.push(10)  }}"
          id="{0}-10"
          d="M 304.1764,299.56683 L 315.7656,301.7743 L 315.7656,295.1519 L 351.63694,297.6353 L 359.08714,282.18303 L 364.88174,281.90709 L 365.70953,279.4237 L 390.2676,292.6685 L 396.06221,291.28883 L 400.20121,243.55236 L 386.68047,243.55236 L 382.26553,246.58763 L 374.26346,262.31582 L 365.98547,263.14363 L 362.9502,260.66023 L 338.66806,260.66023 L 333.42533,265.90296 L 311.6266,265.62703 L 307.21166,265.90296 L 306.10792,272.24942 L 309.971,272.52536 L 304.1764,299.56683 z"
          style="fill:#cddae0;fill-opacity:1;fill-rule:evenodd;stroke:rgb(255,255,255);stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />

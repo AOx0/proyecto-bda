@@ -542,10 +542,6 @@ video {
   position: absolute;
 }
 
-.relative {
-  position: relative;
-}
-
 .z-10 {
   z-index: 10;
 }
@@ -564,10 +560,6 @@ video {
 
 .block {
   display: block;
-}
-
-.inline-block {
-  display: inline-block;
 }
 
 .flex {
@@ -660,6 +652,10 @@ video {
 
 .justify-items-center {
   justify-items: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
 }
 
 .gap-x-2 {

@@ -151,6 +151,25 @@ struct MapaPorcetajes {
     valores: Vec<u64>,
 }
 
+#[derive(Serialize, Debug, Default)]
+struct CantidadesPorMes {
+    total: u64,
+    valores: Vec<Vec<u64>>,
+    meses: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SolicitudCantidadesPorMes {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
+    #[serde(default = "max_year")]
+    annio_final: u16,
+    #[serde(default)]
+    categorias: Vec<u16>,
+    #[serde(default)]
+    alcaldias: Vec<u16>,
+}
+
 #[derive(Debug, Deserialize)]
 struct SolicitudMapaPorcentajes {
     #[serde(default = "min_year")]
@@ -186,7 +205,7 @@ async fn mapa_porcentajes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() {
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() == 17 {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
             .fetch_one(&state.db)
             .await
@@ -204,7 +223,7 @@ async fn mapa_porcentajes(
             .unwrap()
     };
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() {
+    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= 17 {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
             .fetch_all(&state.db)
             .await
@@ -225,6 +244,120 @@ async fn mapa_porcentajes(
     MapaPorcetajes {
         total: u64::try_from(total).unwrap(),
         valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+    }
+    .into()
+}
+
+fn months_between(date1: (u64, u64), date2: (u64, u64)) -> u64 {
+    let total_months1 = date1.0 * 12 + date1.1;
+    let total_months2 = date2.0 * 12 + date2.1;
+
+    if total_months1 > total_months2 {
+        total_months1 - total_months2
+    } else {
+        total_months2 - total_months1
+    }
+}
+
+async fn cantidades_por_mes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudCantidadesPorMes>,
+) -> Json<CantidadesPorMes> {
+    let SolicitudCantidadesPorMes {
+        annio_inicio,
+        annio_final,
+        categorias,
+        alcaldias,
+    } = dbg!(sol);
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty() || categorias.len() >= 17 {
+        sqlx::query_as(&format!("SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_alcaldia_hecho in ({0}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
+            alcaldias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+        .fetch_all(&state.db)
+        .await
+        .unwrap()
+    } else {
+        sqlx::query_as(&format!(
+            "SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_categoria IN ({0}) AND id_alcaldia_hecho IN ({1}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(","),
+            alcaldias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+        .fetch_all(&state.db)
+        .await
+        .unwrap()
+    };
+
+    // println!("{:?}", resultados);
+
+    let mut primer_mes = (u64::MAX, u64::MAX);
+    let mut ultimo_mes = (u64::MIN, u64::MIN);
+    let mut total = 0;
+
+    for (anio, mes, _, t) in resultados.iter().copied() {
+        // println!("Comparando: ({anio}, {mes})");
+        if anio <= primer_mes.0 && mes <= primer_mes.1 {
+            primer_mes = (anio, mes);
+        }
+        if anio >= ultimo_mes.0 || mes >= ultimo_mes.1 {
+            ultimo_mes = (anio, mes);
+        }
+        total += t;
+    }
+
+    // println!("PRIMERO: {:?}", primer_mes);
+    // println!("ULTIMO: {:?}", ultimo_mes);
+
+    let n_meses: usize = usize::try_from(months_between(primer_mes, ultimo_mes)).unwrap();
+
+    // println!("Nmeses: {n_meses}");
+
+    let mut valores = vec![vec![0; n_meses + 1]; alcaldias.len()];
+
+    for (anio, mes, alcaldia, total) in resultados {
+        let m: usize = usize::try_from(months_between(primer_mes, (anio, mes))).unwrap();
+        // println!("{primer_mes:?} ({anio}, {mes}): {m} ({total})");
+        // println!("{alcaldias:?}, {alcaldia}");
+        valores[alcaldias
+            .iter()
+            .enumerate()
+            .find_map(|(i, a)| (a == &u16::try_from(alcaldia).unwrap()).then_some(i))
+            .unwrap()][m] = total as u64;
+    }
+
+    let mut meses = vec![String::new(); n_meses + 1];
+    let mut i = 0;
+    while i < n_meses + 1 {
+        meses[i] = format!("{}-{}", primer_mes.0, primer_mes.1);
+        primer_mes.1 += 1;
+        i += 1;
+        if primer_mes.1 == 13 {
+            primer_mes.1 = 1;
+            primer_mes.0 += 1;
+        }
+    }
+
+    assert_eq!(valores.first().unwrap().len(), meses.len());
+
+    CantidadesPorMes {
+        valores,
+        meses,
+        total: u64::try_from(total).unwrap(),
     }
     .into()
 }
@@ -290,6 +423,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
         .route("/map_percent", post(mapa_porcentajes))
+        .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state);
 
