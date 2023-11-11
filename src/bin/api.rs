@@ -40,15 +40,87 @@ struct Section {
     href: &'static str,
 }
 
+struct Check {
+    mensaje: &'static str,
+    value: u8,
+}
+
 #[derive(Template)]
 #[template(path = "hello.html")]
 struct Hello<'a> {
     posts: &'a [Content],
     sects: &'a [Section],
+    checks: &'a [Check],
 }
 
 async fn root() -> Hello<'static> {
     Hello {
+        checks: &[
+            Check {
+                value: 1,
+                mensaje: "Delito de bajo impacto",
+            },
+            Check {
+                value: 3,
+                mensaje: "Hecho no delictivo",
+            },
+            Check {
+                value: 4,
+                mensaje: "Homicidio doloso",
+            },
+            Check {
+                value: 5,
+                mensaje: "Lesiones dolosas por disparo de arma de fuego",
+            },
+            Check {
+                value: 7,
+                mensaje: "Robo a casa habitación con violencia",
+            },
+            Check {
+                value: 8,
+                mensaje: "Robo a cuentahabiente saliendo del cajero con violencia",
+            },
+            Check {
+                value: 9,
+                mensaje: "Robo a negocio con violencia",
+            },
+            Check {
+                value: 10,
+                mensaje: "Robo a pasajero a bordo de microbus con y sin violencia",
+            },
+            Check {
+                value: 11,
+                mensaje: "Robo a pasajero a bordo de taxi con violencia",
+            },
+            Check {
+                value: 12,
+                mensaje: "Robo a pasajero a bordo del metro con y sin violencia",
+            },
+            Check {
+                value: 13,
+                mensaje: "Robo a repartidor con y sin violencia",
+            },
+            Check {
+                value: 14,
+                mensaje: "Robo a transeunte en vía pública con y sin violencia",
+            },
+            Check {
+                value: 15,
+                mensaje: "Robo a transportista con y sin violencia",
+            },
+            Check {
+                value: 16,
+                mensaje: "Robo de vehículo con y sin violencia",
+            },
+            Check {
+                value: 17,
+                mensaje: "Secuestro",
+            },
+            Check {
+                value: 18,
+                mensaje: "Violación",
+            },
+        ],
         posts: &[
             Content {
                 name: "Muertos",
@@ -75,10 +147,16 @@ async fn root() -> Hello<'static> {
                 method: "/date/upnow",
             },
         ],
-        sects: &[Section {
-            name: "Zonas calientes",
-            href: "#zonas-calientes",
-        }],
+        sects: &[
+            Section {
+                name: "Zonas calientes",
+                href: "#zonas-calientes",
+            },
+            Section {
+                name: "Incidentes por mes",
+                href: "#incidentes-por-mes",
+            },
+        ],
     }
 }
 
