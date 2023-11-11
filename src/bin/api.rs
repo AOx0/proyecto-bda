@@ -2,7 +2,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 use axum::http::{header, HeaderName};
 use axum::response::{AppendHeaders, IntoResponse};
-use axum::routing::{get, post};
+use axum::routing::{get, get_service, post};
 use axum::{Json, Router, Server};
 use chrono::prelude::*;
 use dotenv::dotenv;
@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
+use tower_http::services::ServeDir;
 
 // TODO: Esto es un mega haack exagerado. Deberia de ser el id directamente el año
 const OFFSET: u16 = 1947;
@@ -79,27 +80,6 @@ async fn root() -> Hello<'static> {
             href: "#zonas-calientes",
         }],
     }
-}
-
-async fn htmx() -> impl IntoResponse {
-    (
-        JS_HEADER,
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/htmx.min.js")),
-    )
-}
-
-async fn alpine() -> impl IntoResponse {
-    (
-        JS_HEADER,
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/cdn.min.js")),
-    )
-}
-
-async fn charts() -> impl IntoResponse {
-    (
-        JS_HEADER,
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/chart.js")),
-    )
 }
 
 async fn mapa(Path(n): Path<usize>) -> impl IntoResponse {
@@ -205,7 +185,7 @@ async fn mapa_porcentajes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() == 17 {
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= 16 {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
             .fetch_one(&state.db)
             .await
@@ -223,7 +203,7 @@ async fn mapa_porcentajes(
             .unwrap()
     };
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= 17 {
+    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= 16 {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
             .fetch_all(&state.db)
             .await
@@ -273,7 +253,7 @@ async fn cantidades_por_mes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty() || categorias.len() >= 17 {
+    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty() || categorias.len() >= 16 {
         sqlx::query_as(&format!("SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_alcaldia_hecho in ({0}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
             alcaldias
                 .iter()
@@ -382,6 +362,10 @@ async fn untilnow(State(state): State<Shared>) -> String {
     }
 }
 
+fn static_files() -> Router {
+    Router::new().nest_service("/", get_service(ServeDir::new("./assets")))
+}
+
 #[derive(Clone)]
 struct Shared(Arc<Inner>);
 
@@ -414,10 +398,7 @@ async fn main() -> anyhow::Result<()> {
 
     let router = Router::new()
         .route("/", get(root))
-        .route("/alpine.js", get(alpine))
         .route("/tailwind.css", get(tailwind))
-        .route("/htmx.js", get(htmx))
-        .route("/chart.js", get(charts))
         .route("/script.js", get(scripts))
         .route("/mapa/:n", get(mapa))
         .route("/health", get(|| async { "alive" }))
@@ -425,7 +406,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/map_percent", post(mapa_porcentajes))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
-        .with_state(state);
+        .with_state(state)
+        .fallback_service(static_files());
 
     Server::bind(&address.parse().unwrap())
         .serve(router.into_make_service())

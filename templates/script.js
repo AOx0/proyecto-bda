@@ -100,7 +100,7 @@ function init_draw_pinned_chart(num, data, pinned) {
       pointRadius: 0,
     });
     
-    if( window.myBar===undefined) {
+    if( window.myBar === undefined) {
       window.myBar = new Chart(ctx, {
         type: 'line',
         data: {
@@ -120,6 +120,19 @@ function init_draw_pinned_chart(num, data, pinned) {
       window.myBar.data.labels = json["meses"];
       window.myBar.update();
     }    
+
+    for (let i = 0; i < NOMBRES.length; i++) {
+      // There's no map zone for undefined areas and outside the city
+      if (i + 1 != 4 && i + 1 != 8) {
+      console.log(`ID: ${num}-${i + 1}`)
+        document.getElementById(`${num}-${i + 1}`).style.fill = "rgb(17, 24, 39)"
+      }
+    }
+    pinned.forEach((e, i) => {
+      console.log(`CHANGING: ${num}-${e}`)
+      document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
+    });
+
   });
 }
 
@@ -230,8 +243,8 @@ function update_map_data(n, data) {
     // There's no map zone for undefined areas and outside the city
     if (i + 1 != 4 && i + 1 != 8) {
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
-      let color = `rgba(17, 24, 39, ${color2})`
-      document.getElementById(`${n}-${i + 1}`).style.fill = color
+      document.getElementById(`${n}-${i + 1}`).style.fill = "rgb(17, 24, 39)"
+      document.getElementById(`${n}-${i + 1}`).style.fillOpacity = color2
     }
   }
 }

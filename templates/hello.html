@@ -54,7 +54,7 @@
           }
         );
       init_draw_pinned_chart(1, data, pinned);"
-      x-data="{ data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, pinned: [ 11, 9, 7 ], num: 1 }"
+      x-data="{ data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, pinned: [ 11, 9, 7 ], num: 1 }"
       id="zonas-calientes" class="flex flex-col p-3">
       <h1 class="text-3xl font-bold">Zonas Calientes</h1>
       <div class="flex flex-row justify-between">
@@ -76,13 +76,17 @@
             <label for="dropdown"
               class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300  p-2 rounded-lg">Select
               Options</label>
-            <label
-              x-on:click="if (data['categorias'].lenght === 0) {  data['categorias'] =  [ 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ]} else { data['categorias'] = []; }"
-              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300  p-2 rounded-lg">Clear
+            <label x-on:click="
+                if (data['categorias'].length == 0) {
+                  data['categorias'] = [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ]
+                } else { 
+                  data['categorias'] = []; 
+                }"
+              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300  p-2 rounded-lg">Toggle
               All
             </label>
             <div style="height: 250pt;"
-              class="h-1/3 overflow-y-scroll absolute mt-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden"
+              class="h-1/3 overflow-y-scroll absolute mt-12 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10 hidden"
               id="dropdown-content">
               <label class="block p-2">
                 <input value="1" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
@@ -99,10 +103,6 @@
               <label class="block p-2">
                 <input value="5" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
                 Lesiones dolosas por disparo de arma de fuego
-              </label>
-              <label class="block p-2">
-                <input value="6" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
-                Plagio o secuestro
               </label>
               <label class="block p-2">
                 <input value="7" x-model.number="data.categorias" type="checkbox" class="mr-2 leading-tight">
@@ -171,13 +171,25 @@
           <p id="1-name" class="text-xl font-bold">Iztapalapa</p>
           <!--<p x-text="pinned.map(e => NOMBRES[e-1])"></p>-->
           <canvas id="pinned-1"></canvas>
-          <p class="inline text-sm">Incidentes por mes para las alcaldias y categorías seleccionadas en el período de
-            tiempo
-            de <span class="inline" x-text="data['annio_inicio']">2023</span> hasta <span class="inline"
-              x-text="data['annio_final']">2023</span>
-          </p>
+          <div class="p-6 items-center">
+            <img class="inline w-4 h-4" src="info.svg" alt="Info" />
+            <p class="inline text-sm items-center">Incidentes por mes para las alcaldias y categorías seleccionadas en
+              el
+              período de tiempo de <span class="inline" x-text="data['annio_inicio']">2023</span> hasta <span
+                class="inline" x-text="data['annio_final']">2023</span>
+            </p>
+          </div>
         </div>
       </div>
+    </section>
+    <section x-init="
+        $watch('data', value => { 
+            load_map_data(data, { num: 1, endpoint: '/map_percent' }); 
+            init_draw_pinned_chart(1, data, pinned);
+          }
+        );"
+      x-data="{ data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] } }"
+      id="delitos-vs-bajo-impacto" class="flex flex-col p-3">
     </section>
     <div x-data="{ data: { annio_inicio: 2016, annio_final: 2017 } }"
       class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full border rounded p-5">
