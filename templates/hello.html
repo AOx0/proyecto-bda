@@ -47,7 +47,15 @@
       {% endfor %}
     </div>
     <section x-init="
-        $watch('chart_cfg.pinned', value => init_draw_pinned_chart(1, data, chart_cfg));
+        $watch('chart_cfg.pinned', value => {
+          for (let i = 0; i < NOMBRES.length; i++) {
+            // There's no map zone for undefined areas and outside the city
+            if (i + 1 != 4 && i + 1 != 8) {
+              document.getElementById(`${num}-${i + 1}`).style.fill = 'rgb(17, 24, 39)'
+            }
+          }
+          init_draw_pinned_chart(1, data, chart_cfg);
+        });
         $watch('chart_cfg.colores_en_mapa', value => {
           if (value) {
             chart_cfg.pinned.forEach((e, i) => {
@@ -74,7 +82,7 @@
       "
       x-data="{ chart_cfg: { colores_en_mapa: true, pinned: [ 11, 9, 7 ] }, map_loaded: false, data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, num: 1 }"
       id="zonas-calientes" class="flex flex-col p-3">
-      <h1 class="text-3xl font-bold">Zonas Calientes</h1>
+      <h1 class="text-3xl font-bold pb-3">Zonas Calientes</h1>
       <div class="flex flex-row justify-between">
         <div class="flex flex-col w-1/2 ml-5 pb-5 gap-y-1">
           <div class="flex flex-row gap-x-2">
@@ -88,10 +96,8 @@
               value="2016" />
           </div>
           <div class="flex flex-row gap-x-2">
-            <label class="block p-2">
-              <input value="true" x-model.number="chart_cfg.colores_en_mapa" type="checkbox" class="mr-2 leading-tight">
-              Colores en mapa
-            </label>
+            <label class="block">Colores en mapa: </label>
+            <input value="true" x-model.number="chart_cfg.colores_en_mapa" type="checkbox" class="leading-tight">
           </div>
         </div>
         <div>
@@ -189,10 +195,12 @@
         </div>
       </div>
       <div class="flex md:flex-row flex-col gap-x-4 mt-2 min-w-full md:max-h-full border rounded p-5 items-center ">
-        <div hx-get="/mapa/1" hx-trigger="load" class="c-block justify-items-center flex w-full md:w-1/3 h-full">
+        <div class="flex flex-col justify-items-center h-full w-full md:w-1/3">
+          <div hx-get="/mapa/1" hx-trigger="load" class="c-block justify-items-center flex w-full h-full">
+          </div>
+          <p id="1-name" class="font-bold">Iztapalapa</p>
         </div>
         <div class="min-h-full min-w-2/3 md:w-2/3">
-          <p id="1-name" class="text-xl font-bold">Iztapalapa</p>
           <!--<p x-text="pinned.map(e => NOMBRES[e-1])"></p>-->
           <canvas id="pinned-1"></canvas>
           <div class="p-6 items-center">
