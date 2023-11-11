@@ -40,6 +40,25 @@ const CATEGORIAS = [
   "Violación",
 ];
 
+function linear_regression(data) {
+  let result = []
+
+  // Se espera que data llegue como un vector [entero]
+  let data_xy = data.map((e, i) => {
+    return [i+1, e];
+  });
+
+  const my_regression = regression.linear(
+    data_xy
+  );
+
+  result = my_regression.points.map(([x, y]) => {
+    return y;    
+  });
+
+  return result;
+}
+
 function init_draw_pinned_chart(num, data, pinned) {
 
   const dat = {
@@ -62,17 +81,31 @@ function init_draw_pinned_chart(num, data, pinned) {
     .then((json) => {
     const ctx = document.getElementById(`pinned-${num}`);
 
+    var totales = json["valores"].reduce((acc, array) => acc.map((sum, i) => sum + array[i]), new Array(json["valores"][0].length).fill(0));
+    var pr_totales = totales.map(function (curr) {
+        return curr/json["valores"].length;
+    });
+    const regresion = linear_regression(pr_totales);
 
+    let datasets = json["valores"].map((e, i) => {return {
+      label: NOMBRES[pinned[i]-1],
+      data: e,
+      borderWidth: 1
+    };});
+
+    datasets.splice(0, 0, {
+      label: "",
+      data: regresion,
+      borderWidth: 1,
+      pointRadius: 0,
+    });
+    
     if( window.myBar===undefined) {
       window.myBar = new Chart(ctx, {
         type: 'line',
         data: {
           labels: json["meses"],
-          datasets: json["valores"].map((e, i) => {return {
-            label: NOMBRES[pinned[i]-1],
-            data: e,
-            borderWidth: 1
-          };}) 
+          datasets: datasets,
         },
         options: {
           scales: {
@@ -83,11 +116,7 @@ function init_draw_pinned_chart(num, data, pinned) {
         }
       });
     } else {
-      window.myBar.data.datasets = json["valores"].map((e, i) => {return {
-            label: NOMBRES[pinned[i]-1],
-            data: e,
-            borderWidth: 1
-          };});
+      window.myBar.data.datasets = datasets;
       window.myBar.data.labels = json["meses"];
       window.myBar.update();
     }    
