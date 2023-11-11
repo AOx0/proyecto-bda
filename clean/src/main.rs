@@ -56,9 +56,10 @@ fn main() -> Result<()> {
 
     // Ordenamos todos los vectores de valores alfabéticamente
     uniques.iter_mut().for_each(|(k, v)| {
-        if k.contains("mes") {
+        if k.starts_with("mes") {
             // Ordenamos manualmente los meses, esta chido tener 1 es enero, 12 diciembre
-            v.sort_by_key(|a| mes_a_int(a))
+            v.sort_by_key(|a| mes_a_int(a.trim().trim_matches('"')));
+            println!("{v:?}");
         } else {
             v.sort()
         }
