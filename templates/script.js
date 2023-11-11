@@ -59,10 +59,10 @@ function linear_regression(data) {
   return result;
 }
 
-function init_draw_pinned_chart(num, data, pinned) {
+function init_draw_pinned_chart(num, data, cfg) {
 
   const dat = {
-    "alcaldias": pinned,
+    "alcaldias": cfg.pinned,
     "categorias": data["categorias"],
     "annio_inicio": data["annio_inicio"],
     "annio_final": data["annio_final"],
@@ -88,7 +88,7 @@ function init_draw_pinned_chart(num, data, pinned) {
     const regresion = linear_regression(pr_totales);
 
     let datasets = json["valores"].map((e, i) => {return {
-      label: NOMBRES[pinned[i]-1],
+      label: NOMBRES[cfg.pinned[i]-1],
       data: e,
       borderWidth: 1
     };});
@@ -124,14 +124,15 @@ function init_draw_pinned_chart(num, data, pinned) {
     for (let i = 0; i < NOMBRES.length; i++) {
       // There's no map zone for undefined areas and outside the city
       if (i + 1 != 4 && i + 1 != 8) {
-      console.log(`ID: ${num}-${i + 1}`)
         document.getElementById(`${num}-${i + 1}`).style.fill = "rgb(17, 24, 39)"
       }
     }
-    pinned.forEach((e, i) => {
-      console.log(`CHANGING: ${num}-${e}`)
-      document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
-    });
+
+    if (cfg.colores_en_mapa) {
+      cfg.pinned.forEach((e, i) => {
+        document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
+      });
+    }
 
   });
 }
@@ -141,7 +142,7 @@ function change_map_info(id, edo) {
   name.innerHTML = `<p hx-trigger="load" hx-get="/health">${NOMBRES[edo - 1]}</p>`
 }
 
-function load_map_data(data, cfg) {
+function load_map_data(data, cfg, chart_cfg) {
   let input_fini = document.getElementById(`afini-${cfg['num']}`);
   let input_init = document.getElementById(`ainit-${cfg['num']}`);
 
@@ -179,7 +180,12 @@ function load_map_data(data, cfg) {
     }
   )
     .then((response) => response.json())
-    .then((json) => update_map_data(cfg.num, json));
+    .then((json) => {
+      update_map_data(cfg.num, json);
+      if (!(chart_cfg === undefined)) {
+        init_draw_pinned_chart(cfg.num, data, chart_cfg);
+    }
+    });
 }
 
 function calculateMean(numbers) {
