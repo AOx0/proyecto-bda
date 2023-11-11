@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         let headers = lines.next().unwrap()?.to_owned();
         let headers = headers
             .split(',')
-            .map(|a| a.to_owned())
+            .map(|a| a.replace('"', ""))
             .collect::<Vec<String>>();
 
         let u = extract_uniques(headers.as_slice(), lines)?;
