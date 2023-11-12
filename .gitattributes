@@ -1,2 +1,3 @@
 tailwind.config.js linguist-vendored
 style.css linguist-vendored
+assets/* linguist-vendored

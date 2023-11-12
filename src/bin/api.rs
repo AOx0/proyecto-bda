@@ -16,12 +16,6 @@ use tower_http::services::ServeDir;
 const OFFSET: u16 = 1947;
 const ACTUAL_CATEGORIES: usize = 16;
 
-const JS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
-    AppendHeaders([(header::CONTENT_TYPE, "text/javascript")]);
-
-const CSS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
-    AppendHeaders([(header::CONTENT_TYPE, "text/css")]);
-
 const SVG_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
     AppendHeaders([(header::CONTENT_TYPE, "image/svg+xml")]);
 #[derive(Serialize)]

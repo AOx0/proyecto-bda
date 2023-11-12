@@ -1,5 +1,20 @@
 const MAIN_COLOR = "rgb(17, 24, 39)";
 
+const MESES = [
+  "ENE",
+  "FEB",
+  "MAR",
+  "ABR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AGO",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DIC",
+]
+
 const NOMBRES = [
   "Alvaro Obregon",
   "Azcapotzalco",
