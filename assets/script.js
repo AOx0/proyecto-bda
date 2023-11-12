@@ -156,12 +156,19 @@ function init_draw_pinned_chart(num, data, cfg) {
   });
 }
 
-function change_map_info(id, edo) {
-  let name = document.getElementById(`${id}-name`);
-  name.innerHTML = `<p hx-trigger="load" hx-get="/health">${NOMBRES[edo - 1]}</p>`
+function change_map_info(id, edo, valores) {
+    let name = document.getElementById(`${id}-name`);
+    let value = document.getElementById(`${id}-value`);
+  if (!(edo === undefined)) {
+    name.innerHTML = `<p>${NOMBRES[edo - 1]}</p>`
+    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 }).format(valores.valores[edo - 1])}</p>`
+  } else {
+    name.innerHTML = `<p>Total</p>`
+    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 }).format(valores.total)}</p>`
+  }
 }
 
-function load_map_data(data, cfg, chart_cfg) {
+function load_map_data(data, cfg, chart_cfg, valores) {
   let input_fini = document.getElementById(`afini-${cfg['num']}`);
   let input_init = document.getElementById(`ainit-${cfg['num']}`);
 
@@ -188,7 +195,7 @@ function load_map_data(data, cfg, chart_cfg) {
   console.log('Fetching')
   console.log(JSON.stringify(data))
 
-  update_map_data(cfg.num, { "total": 2000, "valores": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] });
+  update_map_data(cfg.num, { "total": 2000, "valores": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] }, valores);
   fetch(cfg.endpoint,
     {
       method: "POST",
@@ -200,10 +207,11 @@ function load_map_data(data, cfg, chart_cfg) {
   )
     .then((response) => response.json())
     .then((json) => {
-      update_map_data(cfg.num, json);
+      update_map_data(cfg.num, json, valores);
+      change_map_info(cfg.num, undefined, valores);      
       if (!(chart_cfg === undefined)) {
-        init_draw_pinned_chart(cfg.num, data, chart_cfg);
-    }
+          init_draw_pinned_chart(cfg.num, data, chart_cfg);
+      }
     });
 }
 
@@ -310,8 +318,10 @@ function calculateProbabilityLessThan(x, mean, stdDeviation) {
   return probability;
 }
 
-function update_map_data(n, data) {
+function update_map_data(n, data, valores) {
   console.log(`Updating ${n} with ${data.total}`)
+  valores['valores'] = data.valores;
+  valores['total'] = data.total;
   let vals = data.valores.map((v) => v / data.total);
 
   let r = calculateStandardDeviation(vals);

@@ -149,7 +149,7 @@ async fn root() -> Hello<'static> {
                 href: "#zonas-calientes",
             },
             Section {
-                name: "Incidentes por mes",
+                name: "Mapas de calor por Mes y Año",
                 href: "#incidentes-por-mes",
             },
         ],
@@ -477,7 +477,7 @@ async fn anio_porcentajes(
             .unwrap()
     };
 
-    println!("Anio: {resultados:?}");
+    // println!("Anio: {resultados:?}");
 
     AnioPorcetajes {
         total: u64::try_from(total).unwrap(),
@@ -549,8 +549,8 @@ async fn mes_porcentajes(
 
     assert!(res.len() >= 9);
 
-    println!("Meses en {}: {resultados:?}", anio + OFFSET);
-    println!("Meses en {}: {res:?}", anio + OFFSET);
+    // println!("Meses en {}: {resultados:?}", anio + OFFSET);
+    // println!("Meses en {}: {res:?}", anio + OFFSET);
 
     MesPorcetajesEnAnio {
         total: u64::try_from(total).unwrap(),
