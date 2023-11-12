@@ -161,10 +161,10 @@ function change_map_info(id, edo, valores) {
     let value = document.getElementById(`${id}-value`);
   if (!(edo === undefined)) {
     name.innerHTML = `<p>${NOMBRES[edo - 1]}</p>`
-    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 }).format(valores.valores[edo - 1])}</p>`
+    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', {}).format(valores.valores[edo - 1])}</p>`
   } else {
     name.innerHTML = `<p>Total</p>`
-    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', { maximumSignificantDigits: 3 }).format(valores.total)}</p>`
+    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', {}).format(valores.total)}</p>`
   }
 }
 
@@ -242,7 +242,7 @@ function erf(y) {
   return sign * z;
 }
 
-function load_years_data(data, cfg) {
+function load_years_data(data, cfg, valores) {
   console.log('Fetching years')
   console.log(JSON.stringify(data))
 
@@ -260,11 +260,11 @@ function load_years_data(data, cfg) {
   )
     .then((response) => response.json())
     .then((json) => {
-      update_years_data(cfg.num, json);
+      update_years_data(cfg.num, json, valores);
     });
 }
 
-function load_month_data(data, cfg) {
+function load_month_data(data, cfg, valores) {
   console.log('Fetching months')
   console.log(JSON.stringify(data))
 
@@ -290,7 +290,7 @@ function load_month_data(data, cfg) {
     )
     .then((response) => response.json())
     .then((json) => {
-      update_mes_data(cfg.num, json);
+      update_mes_data(cfg.num, json, valores);
     });
   }
 }
@@ -319,7 +319,7 @@ function calculateProbabilityLessThan(x, mean, stdDeviation) {
 }
 
 function update_map_data(n, data, valores) {
-  console.log(`Updating ${n} with ${data.total}`)
+  // console.log(`Updating ${n} with ${data.total}`)
   valores['valores'] = data.valores;
   valores['total'] = data.total;
   let vals = data.valores.map((v) => v / data.total);
@@ -337,9 +337,11 @@ function update_map_data(n, data, valores) {
   }
 }
 
-function update_years_data(n, data) {
-  console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+function update_years_data(n, data, valores) {
+  // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
+  console.log(valores);
+  valores['anios'] = data.valores;
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
@@ -353,9 +355,11 @@ function update_years_data(n, data) {
   }
 }
 
-function update_mes_data(n, data) {
-  console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+function update_mes_data(n, data, valores) {
+  // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
+  console.log(valores);
+  valores[`y${data.anio}`] = data.valores;
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
