@@ -502,27 +502,28 @@ async fn mes_porcentajes(
         .await
         .unwrap()
     } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio};",
+        sqlx::query_as(&format!(
+            "SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho = {anio};",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
                 .collect::<Vec<_>>()
                 .join(",")
         ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
+        .fetch_one(&state.db)
+        .await
+        .unwrap()
     };
 
-    let mut resultados: Vec<(i64,)> = if categorias.is_empty()
+    let resultados: Vec<(u16, i64)> = if categorias.is_empty()
         || categorias.len() >= ACTUAL_CATEGORIES
     {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = {anio} GROUP BY delitos.id_mes_hecho ORDER BY delitos.id_mes_hecho;")) 
+        sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho = {anio} GROUP BY id_mes_hecho ORDER BY id_mes_hecho;")) 
             .fetch_all(&state.db)
             .await
             .unwrap()
     } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio} GROUP BY delitos.id_mes_hecho ORDER BY delitos.id_mes_hecho;",
+        sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio} GROUP BY id_mes_hecho ORDER BY id_mes_hecho;",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
@@ -536,19 +537,24 @@ async fn mes_porcentajes(
 
     // println!("{resultados:?}");
 
-    while (resultados.len() < 9 && anio + OFFSET == 2023)
-        || (resultados.len() < 12 && anio + OFFSET != 2023)
-    {
-        resultados.push((0,));
-    }
+    let mut res = if anio + OFFSET == 2023 {
+        vec![0; 9]
+    } else {
+        vec![0; 12]
+    };
 
-    assert!(resultados.len() >= 9);
+    resultados.iter().copied().for_each(|(m, v)| {
+        res[m as usize - 1] = v;
+    });
+
+    assert!(res.len() >= 9);
 
     println!("Meses en {}: {resultados:?}", anio + OFFSET);
+    println!("Meses en {}: {res:?}", anio + OFFSET);
 
     MesPorcetajesEnAnio {
         total: u64::try_from(total).unwrap(),
-        valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+        valores: res.into_iter().map(|n| n as u64).collect(),
         anio: anio + OFFSET,
     }
     .into()
