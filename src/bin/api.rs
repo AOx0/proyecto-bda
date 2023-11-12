@@ -266,7 +266,7 @@ async fn mapa_porcentajes(
         annio_inicio,
         annio_final,
         categorias,
-    } = dbg!(sol);
+    } = sol;
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
@@ -335,7 +335,7 @@ async fn cantidades_por_mes(
         annio_final,
         categorias,
         alcaldias,
-    } = dbg!(sol);
+    } = sol;
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
@@ -435,7 +435,7 @@ async fn anio_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorAnio>,
 ) -> Json<AnioPorcetajes> {
-    let SolicitudPorcentajePorAnio { categorias } = dbg!(sol);
+    let SolicitudPorcentajePorAnio { categorias } = sol;
 
     let annio_inicio = 2016 - OFFSET;
     let annio_final = 2023 - OFFSET;
@@ -477,7 +477,7 @@ async fn anio_porcentajes(
             .unwrap()
     };
 
-    println!("{resultados:?}");
+    println!("Anio: {resultados:?}");
 
     AnioPorcetajes {
         total: u64::try_from(total).unwrap(),
@@ -490,7 +490,7 @@ async fn mes_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorMesDeAnio>,
 ) -> Json<MesPorcetajesEnAnio> {
-    let SolicitudPorcentajePorMesDeAnio { categorias, anio } = dbg!(sol);
+    let SolicitudPorcentajePorMesDeAnio { categorias, anio } = sol;
 
     let anio = anio - OFFSET;
 
@@ -514,7 +514,8 @@ async fn mes_porcentajes(
             .unwrap()
     };
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
+    let mut resultados: Vec<(i64,)> = if categorias.is_empty()
+        || categorias.len() >= ACTUAL_CATEGORIES
     {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = {anio} GROUP BY delitos.id_mes_hecho ORDER BY delitos.id_mes_hecho;")) 
             .fetch_all(&state.db)
@@ -533,7 +534,17 @@ async fn mes_porcentajes(
             .unwrap()
     };
 
-    println!("{resultados:?}");
+    // println!("{resultados:?}");
+
+    while (resultados.len() < 9 && anio + OFFSET == 2023)
+        || (resultados.len() < 12 && anio + OFFSET != 2023)
+    {
+        resultados.push((0,));
+    }
+
+    assert!(resultados.len() >= 9);
+
+    println!("Meses en {}: {resultados:?}", anio + OFFSET);
 
     MesPorcetajesEnAnio {
         total: u64::try_from(total).unwrap(),
@@ -550,7 +561,7 @@ async fn untilnow(State(state): State<Shared>) -> String {
 
     let row: Result<(String,), _> =
         sqlx::query_as("SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = ?), 0)")
-            .bind(&dbg!(year - OFFSET))
+            .bind(&(year - OFFSET))
             .fetch_one(&state.db)
             .await;
 

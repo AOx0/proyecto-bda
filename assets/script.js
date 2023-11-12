@@ -78,6 +78,8 @@ function linear_regression(data) {
 
 function init_draw_pinned_chart(num, data, cfg) {
 
+  if (cfg.pinned.length == 0) return;
+
   const dat = {
     "alcaldias": cfg.pinned,
     "categorias": data["categorias"],
