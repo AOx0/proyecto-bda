@@ -254,6 +254,37 @@ function load_years_data(data, cfg) {
     });
 }
 
+function load_month_data(data, cfg) {
+  console.log('Fetching months')
+  console.log(JSON.stringify(data))
+
+  for (let i = 0; i <= 7; i++) {
+    for (let j = 0; j < 12; j++) {
+       document.getElementById(`anio-${i + 2016}-mes-${j + 1}`).style.opacity = 0.2;
+    }
+  }
+  for (let i = 0; i <= 7; i++) {
+    const temp_data = {
+      anio: i + 2016,
+      categorias: data['categorias']
+    };
+
+    fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(temp_data)
+    }
+    )
+    .then((response) => response.json())
+    .then((json) => {
+      update_mes_data(cfg.num, json);
+    });
+  }
+}
+
 function calculateStandardDeviation(numbers) {
   if (numbers.length === 0) {
     return 0;
@@ -301,12 +332,28 @@ function update_years_data(n, data) {
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
 
-  for (let i = 0; i <= 7; i++) {
+  for (let i = 0; i < 8; i++) {
     // There's no map zone for undefined areas and outside the city
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
       console.log(`anio-${i + 2016} a ${color2}`)
       document.getElementById(`anio-${i + 2016}`).style.backgroundColor = MAIN_COLOR;
       document.getElementById(`anio-${i + 2016}`).style.opacity = color2 + 0.1;
+  }
+}
+
+function update_mes_data(n, data) {
+  console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+  let vals = data.valores.map((v) => v / data.total);
+
+  let r = calculateStandardDeviation(vals);
+  let r2 = calculateMean(vals);
+
+  for (let i = 0; i < 12; i++) {
+    // There's no map zone for undefined areas and outside the city
+      let color2 = calculateProbabilityLessThan(vals[i], r2, r);
+      console.log(`anio-${data.anio}-${i + 1} a ${color2}`)
+      document.getElementById(`anio-${data.anio}-mes-${i + 1}`).style.backgroundColor = MAIN_COLOR;
+      document.getElementById(`anio-${data.anio}-mes-${i + 1}`).style.opacity = color2 + 0.1;
   }
 }
 

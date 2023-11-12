@@ -216,6 +216,20 @@ struct SolicitudPorcentajePorAnio {
     categorias: Vec<u16>,
 }
 
+#[derive(Debug, Deserialize)]
+struct SolicitudPorcentajePorMesDeAnio {
+    #[serde(default)]
+    categorias: Vec<u16>,
+    anio: u16,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct MesPorcetajesEnAnio {
+    total: u64,
+    anio: u16,
+    valores: Vec<u64>,
+}
+
 #[derive(Serialize, Debug, Default)]
 struct AnioPorcetajes {
     total: u64,
@@ -446,12 +460,12 @@ async fn anio_porcentajes(
 
     let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
     {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;")) 
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;")) 
             .fetch_all(&state.db)
             .await
             .unwrap()
     } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;",
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
@@ -468,6 +482,63 @@ async fn anio_porcentajes(
     AnioPorcetajes {
         total: u64::try_from(total).unwrap(),
         valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+    }
+    .into()
+}
+
+async fn mes_porcentajes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudPorcentajePorMesDeAnio>,
+) -> Json<MesPorcetajesEnAnio> {
+    let SolicitudPorcentajePorMesDeAnio { categorias, anio } = dbg!(sol);
+
+    let anio = anio - OFFSET;
+
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+        sqlx::query_as(&format!(
+            "SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = {anio};"
+        ))
+        .fetch_one(&state.db)
+        .await
+        .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio};",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
+    {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = {anio} GROUP BY delitos.id_mes_hecho ORDER BY delitos.id_mes_hecho;")) 
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio} GROUP BY delitos.id_mes_hecho ORDER BY delitos.id_mes_hecho;",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    };
+
+    println!("{resultados:?}");
+
+    MesPorcetajesEnAnio {
+        total: u64::try_from(total).unwrap(),
+        valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+        anio: anio + OFFSET,
     }
     .into()
 }
@@ -532,6 +603,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
         .route("/map_percent", post(mapa_porcentajes))
+        .route("/mes_percent", post(mes_porcentajes))
         .route("/anio_percent", post(anio_porcentajes))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
