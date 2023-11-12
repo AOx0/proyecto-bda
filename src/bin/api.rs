@@ -152,6 +152,10 @@ async fn root() -> Hello<'static> {
                 name: "Mapas de calor por Mes y Año",
                 href: "#incidentes-por-mes",
             },
+            Section {
+                name: "Mapas de calor por Dia y Hora",
+                href: "#incidentes-por-dia",
+            },
         ],
     }
 }
@@ -211,6 +215,16 @@ struct SolicitudCantidadesPorMes {
 }
 
 #[derive(Debug, Deserialize)]
+struct SolicitudPorcentajePorDia {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
+    #[serde(default = "max_year")]
+    annio_final: u16,
+    #[serde(default)]
+    categorias: Vec<u16>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SolicitudPorcentajePorAnio {
     #[serde(default)]
     categorias: Vec<u16>,
@@ -227,6 +241,12 @@ struct SolicitudPorcentajePorMesDeAnio {
 struct MesPorcetajesEnAnio {
     total: u64,
     anio: u16,
+    valores: Vec<u64>,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct DiaPorcentajes {
+    total: u64,
     valores: Vec<u64>,
 }
 
@@ -431,6 +451,72 @@ async fn cantidades_por_mes(
     .into()
 }
 
+async fn dias_porcentajes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudPorcentajePorDia>,
+) -> Json<DiaPorcentajes> {
+    let SolicitudPorcentajePorDia {
+        annio_inicio,
+        annio_final,
+        categorias,
+    } = sol;
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let resultados: Vec<(i16, i64)> = if categorias.is_empty()
+        || categorias.len() >= ACTUAL_CATEGORIES
+    {
+        sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho)")) 
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho);",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let mut res = vec![0; 7];
+
+    for (i, v) in resultados {
+        res[i as usize] = v as u64;
+    }
+
+    println!("Dias: {res:?}");
+
+    DiaPorcentajes {
+        total: u64::try_from(total).unwrap(),
+        valores: res,
+    }
+    .into()
+}
+
 async fn anio_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorAnio>,
@@ -622,6 +708,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/map_percent", post(mapa_porcentajes))
         .route("/mes_percent", post(mes_porcentajes))
         .route("/anio_percent", post(anio_porcentajes))
+        .route("/dias_percent", post(dias_porcentajes))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)

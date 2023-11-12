@@ -1,5 +1,15 @@
 const MAIN_COLOR = "rgb(17, 24, 39)";
 
+const DIAS = [
+  "Lunes",
+  "Martes",
+  "Miercoles",
+  "Jueves",
+  "Viernes",
+  "Sabado",
+  "Domingo"
+]
+
 const MESES = [
   "ENE",
   "FEB",
@@ -264,6 +274,51 @@ function load_years_data(data, cfg, valores) {
     });
 }
 
+function load_dias_data(data, cfg, valores) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  console.log('Fetching dias')
+  console.log(JSON.stringify(data))
+
+  for (let i = 1; i <= 7; i++) {
+      document.getElementById(`dia-${i}`).style.opacity = 0.2;
+  }
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      update_dias_data(cfg.num, json, valores);
+    });
+}
+
 function load_month_data(data, cfg, valores) {
   console.log('Fetching months')
   console.log(JSON.stringify(data))
@@ -352,6 +407,23 @@ function update_years_data(n, data, valores) {
       console.log(`anio-${i + 2016} a ${color2}`)
       document.getElementById(`anio-${i + 2016}`).style.backgroundColor = MAIN_COLOR;
       document.getElementById(`anio-${i + 2016}`).style.opacity = color2 + 0.1;
+  }
+}
+
+function update_dias_data(n, data, valores) {
+  // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+  let vals = data.valores.map((v) => v / data.total);
+  console.log(valores);
+  valores['dias'] = data.valores;
+
+  let r = calculateStandardDeviation(vals);
+  let r2 = calculateMean(vals);
+
+  for (let i = 0; i < 7; i++) {
+    // There's no map zone for undefined areas and outside the city
+      let color2 = calculateProbabilityLessThan(vals[i], r2, r);
+      document.getElementById(`dia-${i + 1}`).style.backgroundColor = MAIN_COLOR;
+      document.getElementById(`dia-${i + 1}`).style.opacity = color2 + 0.1;
   }
 }
 
