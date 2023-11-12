@@ -8,7 +8,7 @@ macro_rules! p {
 
 fn main() {
     let res = Command::new("tailwindcss")
-        .args(["-i", "./templates/input.css", "-o", "./style.css"])
+        .args(["-i", "./templates/input.css", "-o", "./assets/tailwind.css"])
         .output();
 
     if let Err(err) = res {

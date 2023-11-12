@@ -14,6 +14,8 @@ use tower_http::services::ServeDir;
 
 // TODO: Esto es un mega haack exagerado. Deberia de ser el id directamente el año
 const OFFSET: u16 = 1947;
+const ACTUAL_CATEGORIES: usize = 16;
+
 const JS_HEADER: AppendHeaders<[(HeaderName, &str); 1]> =
     AppendHeaders([(header::CONTENT_TYPE, "text/javascript")]);
 
@@ -170,20 +172,6 @@ async fn mapa(Path(n): Path<usize>) -> impl IntoResponse {
     )
 }
 
-async fn scripts() -> impl IntoResponse {
-    (
-        JS_HEADER,
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/script.js")),
-    )
-}
-
-async fn tailwind() -> impl IntoResponse {
-    (
-        CSS_HEADER,
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/style.css")),
-    )
-}
-
 async fn date(State(state): State<Shared>, Path(date): Path<String>) -> String {
     let invalid = date.chars().any(|a| !(a.is_ascii_digit() || a == '-'));
 
@@ -229,6 +217,18 @@ struct SolicitudCantidadesPorMes {
 }
 
 #[derive(Debug, Deserialize)]
+struct SolicitudPorcentajePorAnio {
+    #[serde(default)]
+    categorias: Vec<u16>,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct AnioPorcetajes {
+    total: u64,
+    valores: Vec<u64>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SolicitudMapaPorcentajes {
     #[serde(default = "min_year")]
     annio_inicio: u16,
@@ -263,7 +263,7 @@ async fn mapa_porcentajes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= 16 {
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
             .fetch_one(&state.db)
             .await
@@ -281,7 +281,8 @@ async fn mapa_porcentajes(
             .unwrap()
     };
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= 16 {
+    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
+    {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
             .fetch_all(&state.db)
             .await
@@ -331,7 +332,9 @@ async fn cantidades_por_mes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty() || categorias.len() >= 16 {
+    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty()
+        || categorias.len() >= ACTUAL_CATEGORIES
+    {
         sqlx::query_as(&format!("SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_alcaldia_hecho in ({0}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
             alcaldias
                 .iter()
@@ -420,6 +423,61 @@ async fn cantidades_por_mes(
     .into()
 }
 
+async fn anio_porcentajes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudPorcentajePorAnio>,
+) -> Json<AnioPorcetajes> {
+    let SolicitudPorcentajePorAnio { categorias } = dbg!(sol);
+
+    let annio_inicio = 2016 - OFFSET;
+    let annio_final = 2023 - OFFSET;
+
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
+    {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;")) 
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    };
+
+    println!("{resultados:?}");
+
+    AnioPorcetajes {
+        total: u64::try_from(total).unwrap(),
+        valores: resultados.into_iter().map(|(n,)| n as u64).collect(),
+    }
+    .into()
+}
+
 async fn untilnow(State(state): State<Shared>) -> String {
     let utc: DateTime<Utc> = Utc::now();
     let year = utc.format("%Y").to_string();
@@ -476,12 +534,11 @@ async fn main() -> anyhow::Result<()> {
 
     let router = Router::new()
         .route("/", get(root))
-        .route("/tailwind.css", get(tailwind))
-        .route("/script.js", get(scripts))
         .route("/mapa/:n", get(mapa))
         .route("/health", get(|| async { "alive" }))
         .route("/date/:date", get(date))
         .route("/map_percent", post(mapa_porcentajes))
+        .route("/anio_percent", post(anio_porcentajes))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)

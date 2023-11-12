@@ -1,3 +1,5 @@
+const MAIN_COLOR = "rgb(17, 24, 39)";
+
 const NOMBRES = [
   "Alvaro Obregon",
   "Azcapotzalco",
@@ -124,7 +126,7 @@ function init_draw_pinned_chart(num, data, cfg) {
     for (let i = 0; i < NOMBRES.length; i++) {
       // There's no map zone for undefined areas and outside the city
       if (i + 1 != 4 && i + 1 != 8) {
-        document.getElementById(`${num}-${i + 1}`).style.fill = "rgb(17, 24, 39)"
+        document.getElementById(`${num}-${i + 1}`).style.fill = MAIN_COLOR
       }
     }
 
@@ -215,6 +217,28 @@ function erf(y) {
   return sign * z;
 }
 
+function load_years_data(data, cfg) {
+  console.log('Fetching years')
+  console.log(JSON.stringify(data))
+
+  for (let i = 0; i <= 7; i++) {
+      document.getElementById(`anio-${i + 2016}`).style.opacity = 0.2;
+  }
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      update_years_data(cfg.num, json);
+    });
+}
+
 function calculateStandardDeviation(numbers) {
   if (numbers.length === 0) {
     return 0;
@@ -249,9 +273,25 @@ function update_map_data(n, data) {
     // There's no map zone for undefined areas and outside the city
     if (i + 1 != 4 && i + 1 != 8) {
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
-      document.getElementById(`${n}-${i + 1}`).style.fill = "rgb(17, 24, 39)"
+      document.getElementById(`${n}-${i + 1}`).style.fill = MAIN_COLOR
       document.getElementById(`${n}-${i + 1}`).style.fillOpacity = color2
     }
+  }
+}
+
+function update_years_data(n, data) {
+  console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+  let vals = data.valores.map((v) => v / data.total);
+
+  let r = calculateStandardDeviation(vals);
+  let r2 = calculateMean(vals);
+
+  for (let i = 0; i <= 7; i++) {
+    // There's no map zone for undefined areas and outside the city
+      let color2 = calculateProbabilityLessThan(vals[i], r2, r);
+      console.log(`anio-${i + 2016} a ${color2}`)
+      document.getElementById(`anio-${i + 2016}`).style.backgroundColor = MAIN_COLOR;
+      document.getElementById(`anio-${i + 2016}`).style.opacity = color2 + 0.1;
   }
 }
 
