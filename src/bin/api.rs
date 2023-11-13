@@ -215,6 +215,18 @@ struct SolicitudCantidadesPorMes {
 }
 
 #[derive(Debug, Deserialize)]
+struct SolicitudTopPorAnio {
+    #[serde(default = "max_year")]
+    annio: u16,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct TopPorAnio {
+    valores: Vec<u64>,
+    nombres: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SolicitudPorcentajePorDia {
     #[serde(default = "min_year")]
     annio_inicio: u16,
@@ -770,6 +782,47 @@ async fn mes_porcentajes(
     .into()
 }
 
+fn uppercase_first_letter(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
+async fn top_por_anio(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudTopPorAnio>,
+) -> Json<TopPorAnio> {
+    let SolicitudTopPorAnio { annio } = sol;
+
+    let anio = annio - OFFSET;
+
+    let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho = {anio} GROUP BY delito;"
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
+
+    resultados.sort_unstable_by_key(|(_, v)| *v);
+    resultados = resultados
+        .into_iter()
+        .rev()
+        .take(15)
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    TopPorAnio {
+        valores: resultados.iter().map(|(_, n)| *n as u64).collect(),
+        nombres: resultados
+            .into_iter()
+            .map(|(n, _)| uppercase_first_letter(n.to_lowercase().as_str()))
+            .collect(),
+    }
+    .into()
+}
+
 async fn untilnow(State(state): State<Shared>) -> String {
     let utc: DateTime<Utc> = Utc::now();
     let year = utc.format("%Y").to_string();
@@ -834,6 +887,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/anio_percent", post(anio_porcentajes))
         .route("/dias_percent", post(dias_porcentajes))
         .route("/horas_percent", post(horas_porcentajes))
+        .route("/top_por_anio", post(top_por_anio))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)
