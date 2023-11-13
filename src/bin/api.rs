@@ -225,6 +225,18 @@ struct SolicitudPorcentajePorDia {
 }
 
 #[derive(Debug, Deserialize)]
+struct SolicitudPorcentajePorHora {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
+    #[serde(default = "max_year")]
+    annio_final: u16,
+    #[serde(default)]
+    categorias: Vec<u16>,
+    #[serde(default, rename = "pinned")]
+    dias: Vec<u16>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SolicitudPorcentajePorAnio {
     #[serde(default)]
     categorias: Vec<u16>,
@@ -246,6 +258,12 @@ struct MesPorcetajesEnAnio {
 
 #[derive(Serialize, Debug, Default)]
 struct DiaPorcentajes {
+    total: u64,
+    valores: Vec<u64>,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct HoraPorcentajes {
     total: u64,
     valores: Vec<u64>,
 }
@@ -285,8 +303,10 @@ async fn mapa_porcentajes(
     let SolicitudMapaPorcentajes {
         annio_inicio,
         annio_final,
-        categorias,
+        mut categorias,
     } = sol;
+
+    categorias.sort();
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
@@ -353,9 +373,12 @@ async fn cantidades_por_mes(
     let SolicitudCantidadesPorMes {
         annio_inicio,
         annio_final,
-        categorias,
-        alcaldias,
+        mut categorias,
+        mut alcaldias,
     } = sol;
+
+    categorias.sort();
+    alcaldias.sort();
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
@@ -458,11 +481,13 @@ async fn dias_porcentajes(
     let SolicitudPorcentajePorDia {
         annio_inicio,
         annio_final,
-        categorias,
+        mut categorias,
     } = sol;
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
+
+    categorias.sort();
 
     let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
         sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
@@ -517,11 +542,105 @@ async fn dias_porcentajes(
     .into()
 }
 
+async fn horas_porcentajes(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudPorcentajePorHora>,
+) -> Json<HoraPorcentajes> {
+    let SolicitudPorcentajePorHora {
+        annio_inicio,
+        annio_final,
+        mut categorias,
+        mut dias,
+    } = dbg!(sol);
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    dias.sort();
+    categorias.sort();
+
+    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({0});", 
+            dias
+                .iter()
+                .map(|id| format!("{}", id - 1))
+                .collect::<Vec<_>>()
+                .join(",")
+        )) 
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({1});",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(","),
+            dias
+                .iter()
+                .map(|id| format!("{}", id - 1))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_one(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let resultados: Vec<(i16, i64)> = if categorias.is_empty()
+        || categorias.len() >= ACTUAL_CATEGORIES
+    {
+        sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({0}) GROUP BY HOUR(hora_hecho);",
+            dias
+                .iter()
+                .map(|id| format!("{}", id - 1))
+                .collect::<Vec<_>>()
+                .join(",")
+        )) 
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    } else {
+        sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({1}) GROUP BY HOUR(hora_hecho);",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(","),
+            dias
+                .iter()
+                .map(|id| format!("{}", id - 1))
+                .collect::<Vec<_>>()
+                .join(",")
+        ))
+            .fetch_all(&state.db)
+            .await
+            .unwrap()
+    };
+
+    let mut res = vec![0; 24];
+
+    for (i, v) in resultados {
+        res[i as usize] = v as u64;
+    }
+
+    println!("Horas: {res:?}");
+
+    HoraPorcentajes {
+        total: u64::try_from(total).unwrap(),
+        valores: res,
+    }
+    .into()
+}
+
 async fn anio_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorAnio>,
 ) -> Json<AnioPorcetajes> {
-    let SolicitudPorcentajePorAnio { categorias } = sol;
+    let SolicitudPorcentajePorAnio { mut categorias } = sol;
+
+    categorias.sort();
 
     let annio_inicio = 2016 - OFFSET;
     let annio_final = 2023 - OFFSET;
@@ -576,7 +695,9 @@ async fn mes_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorMesDeAnio>,
 ) -> Json<MesPorcetajesEnAnio> {
-    let SolicitudPorcentajePorMesDeAnio { categorias, anio } = sol;
+    let SolicitudPorcentajePorMesDeAnio { mut categorias, anio } = sol;
+
+    categorias.sort();
 
     let anio = anio - OFFSET;
 
@@ -709,6 +830,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/mes_percent", post(mes_porcentajes))
         .route("/anio_percent", post(anio_porcentajes))
         .route("/dias_percent", post(dias_porcentajes))
+        .route("/horas_percent", post(horas_porcentajes))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)

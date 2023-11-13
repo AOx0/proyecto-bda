@@ -319,6 +319,56 @@ function load_dias_data(data, cfg, valores) {
     });
 }
 
+function load_hours_data(data, cfg, valores) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  console.log('Fetching hours')
+  console.log(JSON.stringify(data))
+
+  for (let i = 1; i <= 24; i++) {
+      document.getElementById(`hora-${i}`).style.opacity = 0.2;
+  }
+
+  if (data['pinned'].length == 0) {
+    return;
+  }
+  
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      update_hours_data(cfg.num, json, valores);
+    });
+}
+
 function load_month_data(data, cfg, valores) {
   console.log('Fetching months')
   console.log(JSON.stringify(data))
@@ -424,6 +474,23 @@ function update_dias_data(n, data, valores) {
       let color2 = calculateProbabilityLessThan(vals[i], r2, r);
       document.getElementById(`dia-${i + 1}`).style.backgroundColor = MAIN_COLOR;
       document.getElementById(`dia-${i + 1}`).style.opacity = color2 + 0.1;
+  }
+}
+
+function update_hours_data(n, data, valores) {
+  // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
+  let vals = data.valores.map((v) => v / data.total);
+  console.log(valores);
+  valores['horas'] = data.valores;
+
+  let r = calculateStandardDeviation(vals);
+  let r2 = calculateMean(vals);
+
+  for (let i = 0; i < 24; i++) {
+    // There's no map zone for undefined areas and outside the city
+      let color2 = calculateProbabilityLessThan(vals[i], r2, r);
+      document.getElementById(`hora-${i + 1}`).style.backgroundColor = MAIN_COLOR;
+      document.getElementById(`hora-${i + 1}`).style.opacity = color2 + 0.1;
   }
 }
 
