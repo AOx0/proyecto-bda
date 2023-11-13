@@ -327,42 +327,41 @@ async fn mapa_porcentajes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    };
+    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;")) 
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    };
+    let resultados: Vec<(i64,)> = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND delitos.id_alcaldia_hecho IS NOT NULL GROUP BY delitos.id_alcaldia_hecho ORDER BY delitos.id_alcaldia_hecho;",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     MapaPorcetajes {
         total: u64::try_from(total).unwrap(),
@@ -399,37 +398,29 @@ async fn cantidades_por_mes(
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let resultados: Vec<(u64, u64, u64, i64)> = if categorias.is_empty()
-        || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_alcaldia_hecho in ({0}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
-            alcaldias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-        .fetch_all(&state.db)
-        .await
-        .unwrap()
-    } else {
-        sqlx::query_as(&format!(
-            "SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_categoria IN ({0}) AND id_alcaldia_hecho IN ({1}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(","),
-            alcaldias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-        .fetch_all(&state.db)
-        .await
-        .unwrap()
-    };
+    let resultados: Vec<(u64, u64, u64, i64)> = sqlx::query_as(&format!(
+        "SELECT id_anio_hecho + 1947, id_mes_hecho, id_alcaldia_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND {}id_alcaldia_hecho IN ({a}) GROUP BY id_anio_hecho, id_mes_hecho, id_alcaldia_hecho;",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        },
+        a = alcaldias
+            .iter()
+            .map(|id| format!("{id}"))
+            .collect::<Vec<_>>()
+            .join(",")
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     // println!("{:?}", resultados);
 
@@ -505,43 +496,41 @@ async fn dias_porcentajes(
 
     categorias.sort();
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    };
+    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
 
-    let resultados: Vec<(i16, i64)> = if categorias.is_empty()
-        || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho)")) 
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho);",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    };
+    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho);",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     let mut res = vec![0; 7];
 
@@ -575,65 +564,51 @@ async fn horas_porcentajes(
     dias.sort();
     categorias.sort();
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({0});", 
-            dias
+    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({d});",
+            if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+                format!("")
+            } else {
+                format!(
+                    "id_categoria IN ({0}) AND ",
+                    categorias
+                        .iter()
+                        .map(|id| format!("{id}"))
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            },
+            d = dias
                 .iter()
                 .map(|id| format!("{}", id - 1))
                 .collect::<Vec<_>>()
                 .join(",")
         ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({1});",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(","),
-            dias
-                .iter()
-                .map(|id| format!("{}", id - 1))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    };
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
 
-    let resultados: Vec<(i16, i64)> = if categorias.is_empty()
-        || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({0}) GROUP BY HOUR(hora_hecho);",
-            dias
-                .iter()
-                .map(|id| format!("{}", id - 1))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({1}) GROUP BY HOUR(hora_hecho);",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(","),
-            dias
-                .iter()
-                .map(|id| format!("{}", id - 1))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    };
+    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({d}) GROUP BY HOUR(hora_hecho);",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        },
+        d = dias
+            .iter()
+            .map(|id| format!("{}", id - 1))
+            .collect::<Vec<_>>()
+            .join(",")
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     let mut res = vec![0; 24];
 
@@ -661,42 +636,41 @@ async fn anio_porcentajes(
     let annio_inicio = 2016 - OFFSET;
     let annio_final = 2023 - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};")) 
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_one(&state.db)
-            .await
-            .unwrap()
-    };
+    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
 
-    let resultados: Vec<(i64,)> = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;")) 
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delitos.id_anio_hecho ORDER BY delitos.id_anio_hecho;",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    };
+    let resultados: Vec<(i64,)> = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY id_anio_hecho ORDER BY id_anio_hecho;",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     // println!("Anio: {resultados:?}");
 
@@ -720,46 +694,40 @@ async fn mes_porcentajes(
 
     let anio = anio - OFFSET;
 
-    let (total,): (i64,) = if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-        sqlx::query_as(&format!(
-            "SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = {anio};"
-        ))
-        .fetch_one(&state.db)
-        .await
-        .unwrap()
-    } else {
-        sqlx::query_as(&format!(
-            "SELECT COUNT(1) FROM delitos WHERE id_categoria IN ({0}) AND id_anio_hecho = {anio};",
-            categorias
-                .iter()
-                .map(|id| format!("{id}"))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-        .fetch_one(&state.db)
-        .await
-        .unwrap()
-    };
+    let (total,): (i64,) = sqlx::query_as(&format!(
+        "SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho = {anio};",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
 
-    let resultados: Vec<(u16, i64)> = if categorias.is_empty()
-        || categorias.len() >= ACTUAL_CATEGORIES
-    {
-        sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE id_anio_hecho = {anio} GROUP BY id_mes_hecho ORDER BY id_mes_hecho;")) 
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    } else {
-        sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE delitos.id_categoria IN ({0}) AND id_anio_hecho = {anio} GROUP BY id_mes_hecho ORDER BY id_mes_hecho;",
+    let resultados: Vec<(u16, i64)> = sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE {}id_anio_hecho = {anio} GROUP BY id_mes_hecho;",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!("id_categoria IN ({0}) AND ",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
                 .collect::<Vec<_>>()
-                .join(",")
-        ))
-            .fetch_all(&state.db)
-            .await
-            .unwrap()
-    };
+                .join(","))
+        }
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
 
     // println!("{resultados:?}");
 
@@ -810,11 +778,11 @@ async fn top_por_anio(
     let annio_final = annio_final - OFFSET;
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {0} id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delito;",
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delito;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
-            format!("id_categoria IN ({0}) AND",
+            format!("id_categoria IN ({0}) AND ",
             categorias
                 .iter()
                 .map(|id| format!("{id}"))
