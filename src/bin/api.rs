@@ -216,8 +216,12 @@ struct SolicitudCantidadesPorMes {
 
 #[derive(Debug, Deserialize)]
 struct SolicitudTopPorAnio {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
     #[serde(default = "max_year")]
-    annio: u16,
+    annio_final: u16,
+    #[serde(default)]
+    categorias: Vec<u16>,
 }
 
 #[derive(Serialize, Debug, Default)]
@@ -794,12 +798,30 @@ async fn top_por_anio(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudTopPorAnio>,
 ) -> Json<TopPorAnio> {
-    let SolicitudTopPorAnio { annio } = sol;
+    let SolicitudTopPorAnio {
+        annio_inicio,
+        annio_final,
+        mut categorias,
+    } = dbg!(sol);
 
-    let anio = annio - OFFSET;
+    categorias.sort();
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho = {anio} GROUP BY delito;"
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {0} id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delito;",
+        if categorias.is_empty() {
+            format!("")
+        } else {
+            format!("id_categoria IN ({0}) AND",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(","))
+        }
+
     ))
     .fetch_all(&state.db)
     .await

@@ -180,11 +180,19 @@ function change_map_info(id, edo, valores) {
 
 function load_top_anio(data, cfg) {
   let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
 
   if (input_fini != undefined && input_fini != undefined) {
     let err = false;
-   
-    if (data['annio'] < 2016 || data['annio'] > 2023) {
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
       input_fini.classList.add("text-rose-300")
       err = true
     } else {
