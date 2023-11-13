@@ -566,7 +566,7 @@ async fn horas_porcentajes(
                 .map(|id| format!("{}", id - 1))
                 .collect::<Vec<_>>()
                 .join(",")
-        )) 
+        ))
             .fetch_one(&state.db)
             .await
             .unwrap()
@@ -597,7 +597,7 @@ async fn horas_porcentajes(
                 .map(|id| format!("{}", id - 1))
                 .collect::<Vec<_>>()
                 .join(",")
-        )) 
+        ))
             .fetch_all(&state.db)
             .await
             .unwrap()
@@ -695,7 +695,10 @@ async fn mes_porcentajes(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudPorcentajePorMesDeAnio>,
 ) -> Json<MesPorcetajesEnAnio> {
-    let SolicitudPorcentajePorMesDeAnio { mut categorias, anio } = sol;
+    let SolicitudPorcentajePorMesDeAnio {
+        mut categorias,
+        anio,
+    } = sol;
 
     categorias.sort();
 
