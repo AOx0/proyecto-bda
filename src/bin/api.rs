@@ -811,7 +811,7 @@ async fn top_por_anio(
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
         "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {0} id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delito;",
-        if categorias.is_empty() {
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
             format!("id_categoria IN ({0}) AND",
