@@ -58,9 +58,11 @@
         });
         $watch('chart_cfg.colores_en_mapa', value => {
           if (value) {
-            chart_cfg.pinned.forEach((e, i) => {
-              document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
-            });
+            if (!(window.myBar === undefined)) {
+              chart_cfg.pinned.forEach((e, i) => {
+                document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
+              });
+            }
           } else {
             for (let i = 0; i < NOMBRES.length; i++) {
               // There's no map zone for undefined areas and outside the city
@@ -72,9 +74,11 @@
         });
         $watch('valores', value => {
           if (value) {
-            chart_cfg.pinned.forEach((e, i) => {
-              document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
-            });
+            if (!(window.myBar === undefined)) {
+              chart_cfg.pinned.forEach((e, i) => {
+                document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
+              });
+            }
           } else {
             for (let i = 0; i < NOMBRES.length; i++) {
               // There's no map zone for undefined areas and outside the city
@@ -242,6 +246,39 @@
       </div>
       <div class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full mt-2 p-5 border rounded p-5">
         <canvas id="pinned-4"></canvas>
+      </div>
+    </section>
+    <section x-init="
+        $watch('data', value => { 
+            load_razon-anio(data, { num: 5, endpoint: '/alto_y_bajo' }); 
+          }
+        );
+        load_razon_anio(data, { num: 5, endpoint: '/alto_y_bajo' }); 
+        " x-data="{ 
+          data: { annio_inicio: 2023, annio_final: 2023 }, 
+      }" id="razones-por-anio" class="flex flex-col p-3">
+      <div class="flex flex-col md:flex-row md:justify-between">
+        <h1 class="text-3xl font-bold pb-3">Razón de delitos de bajo y alto impacto</h1>
+        <div class="flex flex-col md:w-1/2 ml-5 gap-y-1">
+          <div class="flex flex-row gap-x-2">
+            <label for="afini-5">Año de corte: </label>
+            <input id="afini-5" x-model.number="data['annio_final']" type="number" min="2016" max="2023" step="1"
+              value="2023" />
+          </div>
+          <div class="flex flex-row gap-x-2">
+            <label for="ainit-5">Año de inicio: </label>
+            <input id="ainit-5" x-model.number="data['annio_inicio']" type="number" min="2016" max="2023" step="1"
+              value="2016" />
+          </div>
+        </div>
+      </div>
+      <div class="flex md:flex-row flex-row gap-x-4 min-w-full md:max-h-full mt-2 p-5 border rounded p-5">
+        <div class="w-1/2">
+          <canvas id="pie-5"></canvas>
+        </div>
+        <div class="w-1/2">
+          <canvas id="pinned-6"></canvas>
+        </div>
       </div>
     </section>
     <section x-init="

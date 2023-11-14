@@ -166,6 +166,75 @@ function init_draw_pinned_chart(num, data, cfg) {
   });
 }
 
+
+function load_razon_anio(data, cfg) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+    const ctx = document.getElementById(`pie-${cfg.num}`);
+
+    if( window.myBar4 === undefined) {
+      window.myBar4 = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ["Alto", "Bajo"],
+          datasets: [{
+            label: "Razon delitos de alto y bajo impacto",
+            data: [json.alto, json.bajo],
+            borderWidth: 1
+          }],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    } else {
+      window.myBar4.data.datasets = [{
+        label: "Razon delitos de alto y bajo impacto",
+        data: [json.alto, json.bajo],
+        borderWidth: 1
+      }];
+      window.myBar4.data.labels = ["Alto", "Bajo"];
+      window.myBar4.update();
+    }    
+  });
+}
+
 function change_map_info(id, edo, valores) {
     let name = document.getElementById(`${id}-name`);
     let value = document.getElementById(`${id}-value`);
@@ -371,11 +440,11 @@ function load_map_data(data, cfg, chart_cfg, valores) {
       body: JSON.stringify(data)
     }
   )
-    .then((response) => response.json())
-    .then((json) => {
-      update_map_data(cfg.num, json, valores);
-      change_map_info(cfg.num, undefined, valores);      
-    });
+  .then((response) => response.json())
+  .then((json) => {
+    update_map_data(cfg.num, json, valores);
+    change_map_info(cfg.num, undefined, valores);      
+  });
 }
 
 function calculateMean(numbers) {

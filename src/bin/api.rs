@@ -153,6 +153,10 @@ async fn root() -> Hello<'static> {
                 href: "#incidentes-por-anio",
             },
             Section {
+                name: "Razón de delitos de bajo y alto impacto",
+                href: "#razones-por-anio",
+            },
+            Section {
                 name: "Mapas de calor por Mes y Año",
                 href: "#incidentes-por-mes",
             },
@@ -204,6 +208,20 @@ struct CantidadesPorMes {
     total: u64,
     valores: Vec<Vec<u64>>,
     meses: Vec<String>,
+}
+
+#[derive(Serialize, Debug, Default)]
+struct CantidadesAltoYBajo {
+    alto: u64,
+    bajo: u64,
+}
+
+#[derive(Debug, Deserialize)]
+struct SolicitudAltoYBajo {
+    #[serde(default = "min_year")]
+    annio_inicio: u16,
+    #[serde(default = "max_year")]
+    annio_final: u16,
 }
 
 #[derive(Debug, Deserialize)]
@@ -817,6 +835,39 @@ async fn top_por_anio(
     .into()
 }
 
+async fn cantidad_alto_y_bajo(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudAltoYBajo>,
+) -> Json<CantidadesAltoYBajo> {
+    let SolicitudAltoYBajo {
+        annio_inicio,
+        annio_final,
+    } = dbg!(sol);
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    let (bajo,): (i64,) = sqlx::query_as(&format!(
+        "SELECT COUNT(*) FROM delitos WHERE id_categoria = 1 AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
+
+    let (alto,): (i64,) = sqlx::query_as(&format!(
+        "SELECT COUNT(*) FROM delitos WHERE id_categoria != 1 AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    ))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
+
+    CantidadesAltoYBajo {
+        alto: alto as u64,
+        bajo: bajo as u64,
+    }
+    .into()
+}
+
 async fn untilnow(State(state): State<Shared>) -> String {
     let utc: DateTime<Utc> = Utc::now();
     let year = utc.format("%Y").to_string();
@@ -882,6 +933,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/dias_percent", post(dias_porcentajes))
         .route("/horas_percent", post(horas_porcentajes))
         .route("/top_por_anio", post(top_por_anio))
+        .route("/alto_y_bajo", post(cantidad_alto_y_bajo))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)
