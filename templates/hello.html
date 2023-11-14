@@ -70,6 +70,20 @@
             }
           }
         });
+        $watch('valores', value => {
+          if (value) {
+            chart_cfg.pinned.forEach((e, i) => {
+              document.getElementById(`${num}-${e}`).style.fill = window.myBar.data.datasets[i + 1].borderColor;
+            });
+          } else {
+            for (let i = 0; i < NOMBRES.length; i++) {
+              // There's no map zone for undefined areas and outside the city
+              if (i + 1 != 4 && i + 1 != 8) {
+                document.getElementById(`${num}-${i + 1}`).style.fill = 'rgb(17, 24, 39)'
+              }
+            }
+          }
+        });
         $watch('data', value => { 
             load_map_data(data, { num: 1, endpoint: '/map_percent' }, chart_cfg, valores); 
           }
@@ -165,6 +179,69 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+    <section x-init="
+        $watch('data', value => { 
+            load_top_anio(data, { num: 4, endpoint: '/top_por_anio' }); 
+          }
+        );
+        load_top_anio(data, { num: 4, endpoint: '/top_por_anio' }); 
+        " x-data="{ 
+          data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, 
+      }" id="incidentes-por-anio" class="flex flex-col p-3">
+      <div class="flex flex-col md:flex-row md:justify-between">
+        <div class="flex flex-col md:w-1/2 ml-5 gap-y-1">
+          <h1 class="text-3xl font-bold pb-3">Top delitos por años</h1>
+          <div class="flex flex-row gap-x-2">
+            <label for="afini-4">Año de corte: </label>
+            <input id="afini-4" x-model.number="data['annio_final']" type="number" min="2016" max="2023" step="1"
+              value="2023" />
+          </div>
+          <div class="flex flex-row gap-x-2">
+            <label for="ainit-4">Año de inicio: </label>
+            <input id="ainit-4" x-model.number="data['annio_inicio']" type="number" min="2016" max="2023" step="1"
+              value="2016" />
+          </div>
+        </div>
+        <div>
+          <div class="flex flex-col gap-2">
+            <input type="checkbox" id="dropdown-4" class="hidden">
+            <label for="dropdown-4"
+              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300 select-none p-2 rounded-lg">Categorías</label>
+            <label x-on:click="
+                if (data['categorias'].length == 0) {
+                  data['categorias'] = [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ]
+                } else { 
+                  data['categorias'] = []; 
+                }"
+              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300  p-2 rounded-lg">Toggle
+              All
+            </label>
+            <div style="height: 250pt;"
+              class="h-1/3 overflow-y-scroll absolute mt-12 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50 hidden"
+              id="dropdown-content-4">
+              {% for p in checks %}
+              <label class="block p-2">
+                <input value="{{ p.value }}" x-model.number="data.categorias" type="checkbox"
+                  class="mr-2 leading-tight">
+                {{ p.mensaje }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <script>
+            const dropdownCheckbox4 = document.getElementById('dropdown-4');
+            const dropdownContent4 = document.getElementById('dropdown-content-4');
+
+            dropdownCheckbox4.addEventListener('click', () => {
+              dropdownContent4.classList.toggle('hidden');
+            });
+          </script>
+        </div>
+      </div>
+      <div class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full mt-2 p-5 border rounded p-5">
+        <canvas id="pinned-4"></canvas>
       </div>
     </section>
     <section x-init="
@@ -411,69 +488,6 @@
           </div>
           {% endfor %}
         </div>
-      </div>
-    </section>
-    <section x-init="
-        $watch('data', value => { 
-            load_top_anio(data, { num: 4, endpoint: '/top_por_anio' }); 
-          }
-        );
-        load_top_anio(data, { num: 4, endpoint: '/top_por_anio' }); 
-        " x-data="{ 
-          data: { annio_inicio: 2023, annio_final: 2023, categorias: [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ] }, 
-      }" id="incidentes-por-anio" class="flex flex-col p-3">
-      <div class="flex flex-col md:flex-row md:justify-between">
-        <div class="flex flex-col md:w-1/2 ml-5 gap-y-1">
-          <h1 class="text-3xl font-bold pb-3">Top delitos por año</h1>
-          <div class="flex flex-row gap-x-2">
-            <label for="afini-4">Año de corte: </label>
-            <input id="afini-4" x-model.number="data['annio_final']" type="number" min="2016" max="2023" step="1"
-              value="2023" />
-          </div>
-          <div class="flex flex-row gap-x-2">
-            <label for="ainit-4">Año de inicio: </label>
-            <input id="ainit-4" x-model.number="data['annio_inicio']" type="number" min="2016" max="2023" step="1"
-              value="2016" />
-          </div>
-        </div>
-        <div>
-          <div class="flex flex-col gap-2">
-            <input type="checkbox" id="dropdown-4" class="hidden">
-            <label for="dropdown-4"
-              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300 select-none p-2 rounded-lg">Categorías</label>
-            <label x-on:click="
-                if (data['categorias'].length == 0) {
-                  data['categorias'] = [ 1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ]
-                } else { 
-                  data['categorias'] = []; 
-                }"
-              class="cursor-pointer block w-48 text-gray-700 text-center bg-gray-200 hover:bg-gray-300  p-2 rounded-lg">Toggle
-              All
-            </label>
-            <div style="height: 250pt;"
-              class="h-1/3 overflow-y-scroll absolute mt-12 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-50 hidden"
-              id="dropdown-content-4">
-              {% for p in checks %}
-              <label class="block p-2">
-                <input value="{{ p.value }}" x-model.number="data.categorias" type="checkbox"
-                  class="mr-2 leading-tight">
-                {{ p.mensaje }}
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-          <script>
-            const dropdownCheckbox4 = document.getElementById('dropdown-4');
-            const dropdownContent4 = document.getElementById('dropdown-content-4');
-
-            dropdownCheckbox4.addEventListener('click', () => {
-              dropdownContent4.classList.toggle('hidden');
-            });
-          </script>
-        </div>
-      </div>
-      <div class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full mt-2 p-5 border rounded p-5">
-        <canvas id="pinned-4"></canvas>
       </div>
     </section>
   </div>

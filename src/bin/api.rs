@@ -149,6 +149,10 @@ async fn root() -> Hello<'static> {
                 href: "#zonas-calientes",
             },
             Section {
+                name: "Top delitos por años",
+                href: "#incidentes-por-anio",
+            },
+            Section {
                 name: "Mapas de calor por Mes y Año",
                 href: "#incidentes-por-mes",
             },

@@ -357,6 +357,10 @@ function load_map_data(data, cfg, chart_cfg, valores) {
   console.log('Fetching')
   console.log(JSON.stringify(data))
 
+  if (!(chart_cfg === undefined)) {
+      init_draw_pinned_chart(cfg.num, data, chart_cfg);
+  }
+
   update_map_data(cfg.num, { "total": 2000, "valores": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] }, valores);
   fetch(cfg.endpoint,
     {
@@ -371,9 +375,6 @@ function load_map_data(data, cfg, chart_cfg, valores) {
     .then((json) => {
       update_map_data(cfg.num, json, valores);
       change_map_info(cfg.num, undefined, valores);      
-      if (!(chart_cfg === undefined)) {
-          init_draw_pinned_chart(cfg.num, data, chart_cfg);
-      }
     });
 }
 
