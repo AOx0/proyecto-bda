@@ -208,10 +208,10 @@ function load_razon_anio(data, cfg) {
       window.myBar4 = new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: ["Alto", "Bajo"],
+          labels: ["Bajo", "Alto"],
           datasets: [{
             label: "Razon delitos de alto y bajo impacto",
-            data: [json.alto, json.bajo],
+            data: [json.bajo, json.alto],
             borderWidth: 1
           }],
         },
@@ -239,10 +239,10 @@ function load_razon_anio(data, cfg) {
     } else {
       window.myBar4.data.datasets = [{
         label: "Razon delitos de alto y bajo impacto",
-        data: [json.alto, json.bajo],
+        data: [json.bajo, json.alto],
         borderWidth: 1
       }];
-      window.myBar4.data.labels = ["Alto", "Bajo"];
+      window.myBar4.data.labels = ["Bajo", "Alto"];
       window.myBar4.update();
     }    
   });
