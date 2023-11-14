@@ -216,9 +216,22 @@ function load_razon_anio(data, cfg) {
           }],
         },
         options: {
+          gridLines: {
+              color: "rgba(0, 0, 0, 0)",
+          },   
           scales: {
             y: {
-              beginAtZero: true
+              beginAtZero: true,
+              display: false,
+              grid: {
+                display: false,
+              },
+            },
+            x: {
+              display: false,
+              grid: {
+                display: false,
+              },
             }
           }
         }
