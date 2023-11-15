@@ -356,8 +356,8 @@ async fn mapa_porcentajes(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -383,8 +383,8 @@ async fn mapa_porcentajes(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -450,8 +450,8 @@ async fn cantidades_por_mes(
             .join(",")
     ))
     .bind(OFFSET)
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -542,8 +542,8 @@ async fn dias_porcentajes(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -569,8 +569,8 @@ async fn dias_porcentajes(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -628,8 +628,8 @@ async fn horas_porcentajes(
             .collect::<Vec<_>>()
             .join(",")
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -661,8 +661,8 @@ async fn horas_porcentajes(
             .collect::<Vec<_>>()
             .join(",")
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -705,8 +705,8 @@ async fn anio_porcentajes(
             )
         }
     ))
-    .bind(&(min_year() - OFFSET))
-    .bind(&(max_year() - OFFSET))
+    .bind(min_year() - OFFSET)
+    .bind(max_year() - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -731,8 +731,8 @@ async fn anio_porcentajes(
             )
         }
     ))
-    .bind(&(min_year() - OFFSET))
-    .bind(&(max_year() - OFFSET))
+    .bind(min_year() - OFFSET)
+    .bind(max_year() - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -772,7 +772,7 @@ async fn mes_porcentajes(
             )
         }
     ))
-    .bind(&(anio - OFFSET))
+    .bind(anio - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -796,7 +796,7 @@ async fn mes_porcentajes(
             )
         }
     ))
-    .bind(&(anio - OFFSET))
+    .bind(anio - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -867,8 +867,8 @@ async fn delitos_por_anio(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -922,8 +922,8 @@ async fn top_por_anio(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -979,8 +979,8 @@ async fn top_por_colonia(
             )
         }
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -1024,8 +1024,8 @@ async fn cantidad_alto_y_bajo(
            JOIN delito USING(id_delito); 
         ",
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -1053,7 +1053,7 @@ async fn cantidad_alto_y_bajo(
 async fn ultimo_dato(State(state): State<Shared>) -> String {
     let (resultado,): (NaiveDate,) =
         sqlx::query_as("SELECT fecha_hecho FROM delitos WHERE id_anio_hecho = ? ORDER BY fecha_hecho DESC LIMIT 1;")
-            .bind(&(2023-1947))
+            .bind(max_year() - OFFSET)
             .fetch_one(&state.db)
             .await
             .unwrap();
@@ -1071,7 +1071,7 @@ async fn numero_anio(State(state): State<Shared>, Path(anio): Path<u16>) -> Stri
           LIMIT 1;
         ",
     )
-    .bind(&(anio - OFFSET))
+    .bind(anio - OFFSET)
     .fetch_one(&state.db)
     .await
     .unwrap();
@@ -1089,7 +1089,7 @@ async fn numero_robo(State(state): State<Shared>, Path(anio): Path<u16>) -> Stri
                     AND id_categoria IN (SELECT id_categoria FROM categoria WHERE categoria LIKE '%ROBO%') 
               LIMIT 1;
             ")
-            .bind(&(anio - OFFSET))
+            .bind(anio - OFFSET)
             .fetch_one(&state.db)
             .await
             .unwrap();
@@ -1118,8 +1118,8 @@ async fn cantidad_alto_y_bajo2(
            JOIN delito USING(id_delito); 
         ",
     ))
-    .bind(&(annio_inicio - OFFSET))
-    .bind(&(annio_final - OFFSET))
+    .bind(annio_inicio - OFFSET)
+    .bind(annio_final - OFFSET)
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -1151,7 +1151,7 @@ async fn untilnow(State(state): State<Shared>) -> String {
 
     let row: Result<(String,), _> =
         sqlx::query_as("SELECT FORMAT((SELECT COUNT(1) FROM delitos WHERE id_anio_hecho = ?), 0)")
-            .bind(&(year - OFFSET))
+            .bind(year - OFFSET)
             .fetch_one(&state.db)
             .await;
 
