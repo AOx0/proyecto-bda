@@ -784,6 +784,52 @@ fn uppercase_first_letter(s: &str) -> String {
     }
 }
 
+async fn delitos_por_anio(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudTopPorAnio>,
+) -> Json<TopPorAnio> {
+    let SolicitudTopPorAnio {
+        annio_inicio,
+        annio_final,
+        mut categorias,
+    } = dbg!(sol);
+
+    categorias.sort();
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
+        "SELECT categoria, COUNT(*) AS fre FROM delitos JOIN categoria USING(id_categoria) WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY id_categoria;",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!("id_categoria IN ({0}) AND ",
+            categorias
+                .iter()
+                .map(|id| format!("{id}"))
+                .collect::<Vec<_>>()
+                .join(","))
+        }
+
+    ))
+    .fetch_all(&state.db)
+    .await
+    .unwrap();
+
+    resultados.sort_unstable_by_key(|(_, v)| *v);
+    resultados = resultados.into_iter().rev().into_iter().collect::<Vec<_>>();
+
+    TopPorAnio {
+        valores: resultados.iter().map(|(_, n)| *n as u64).collect(),
+        nombres: resultados
+            .into_iter()
+            .map(|(n, _)| uppercase_first_letter(n.to_lowercase().as_str()))
+            .collect(),
+    }
+    .into()
+}
+
 async fn top_por_anio(
     State(state): State<Shared>,
     Json(sol): Json<SolicitudTopPorAnio>,
@@ -837,33 +883,80 @@ async fn top_por_anio(
 
 async fn cantidad_alto_y_bajo(
     State(state): State<Shared>,
-    Json(sol): Json<SolicitudAltoYBajo>,
-) -> Json<CantidadesAltoYBajo> {
-    let SolicitudAltoYBajo {
+    Json(sol): Json<SolicitudTopPorAnio>,
+) -> Json<TopPorAnio> {
+    let SolicitudTopPorAnio {
         annio_inicio,
         annio_final,
+        ..
     } = dbg!(sol);
 
     let annio_inicio = annio_inicio - OFFSET;
     let annio_final = annio_final - OFFSET;
 
-    let (bajo,): (i64,) = sqlx::query_as(&format!(
-        "SELECT COUNT(*) FROM delitos WHERE id_categoria = 1 AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_categoria = 1 GROUP BY delito;",
     ))
-    .fetch_one(&state.db)
+    .fetch_all(&state.db)
     .await
     .unwrap();
 
-    let (alto,): (i64,) = sqlx::query_as(&format!(
-        "SELECT COUNT(*) FROM delitos WHERE id_categoria != 1 AND id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    resultados.sort_unstable_by_key(|(_, v)| *v);
+    resultados = resultados.into_iter().rev().into_iter().collect::<Vec<_>>();
+
+    let mut top_15 = resultados[0..15].to_vec();
+    let resto = &resultados[15..];
+
+    let total_resto = resto.iter().fold(0, |s, (_, v)| s + v);
+
+    top_15.push(("Otros".to_string(), total_resto));
+
+    TopPorAnio {
+        valores: top_15.iter().map(|(_, n)| *n as u64).collect(),
+        nombres: top_15
+            .into_iter()
+            .map(|(n, _)| uppercase_first_letter(n.to_lowercase().as_str()))
+            .collect(),
+    }
+    .into()
+}
+
+async fn cantidad_alto_y_bajo2(
+    State(state): State<Shared>,
+    Json(sol): Json<SolicitudTopPorAnio>,
+) -> Json<TopPorAnio> {
+    let SolicitudTopPorAnio {
+        annio_inicio,
+        annio_final,
+        ..
+    } = dbg!(sol);
+
+    let annio_inicio = annio_inicio - OFFSET;
+    let annio_final = annio_final - OFFSET;
+
+    let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_categoria != 1 GROUP BY delito;",
     ))
-    .fetch_one(&state.db)
+    .fetch_all(&state.db)
     .await
     .unwrap();
 
-    CantidadesAltoYBajo {
-        alto: alto as u64,
-        bajo: bajo as u64,
+    resultados.sort_unstable_by_key(|(_, v)| *v);
+    resultados = resultados.into_iter().rev().into_iter().collect::<Vec<_>>();
+
+    let mut top_15 = resultados[0..15].to_vec();
+    let resto = &resultados[15..];
+
+    let total_resto = resto.iter().fold(0, |s, (_, v)| s + v);
+
+    top_15.push(("Otros".to_string(), total_resto));
+
+    TopPorAnio {
+        valores: top_15.iter().map(|(_, n)| *n as u64).collect(),
+        nombres: top_15
+            .into_iter()
+            .map(|(n, _)| uppercase_first_letter(n.to_lowercase().as_str()))
+            .collect(),
     }
     .into()
 }
@@ -933,7 +1026,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/dias_percent", post(dias_porcentajes))
         .route("/horas_percent", post(horas_porcentajes))
         .route("/top_por_anio", post(top_por_anio))
+        .route("/delitos_por_anio", post(delitos_por_anio))
         .route("/alto_y_bajo", post(cantidad_alto_y_bajo))
+        .route("/alto_y_bajo2", post(cantidad_alto_y_bajo2))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)

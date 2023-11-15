@@ -166,6 +166,94 @@ function init_draw_pinned_chart(num, data, cfg) {
   });
 }
 
+function load_razon_anio2(data, cfg) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+    const ctx = document.getElementById(`pie-alto-${cfg.num}`);
+
+    if( window.myBar5 === undefined) {
+      window.myBar5 = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: json["nombres"],
+            datasets: [{
+              label: "",
+              data: json["valores"],
+              borderWidth: 1
+            }],
+          },
+          options: {
+            gridLines: {
+                color: "rgba(0, 0, 0, 0)",
+            },   
+            plugins: {
+                title: { 
+                  display: false 
+                },
+               legend: {
+                  display: false
+               }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                display: false,
+                grid: {
+                  display: false,
+                },
+              },
+              x: {
+                display: false,
+                grid: {
+                  display: false,
+                },
+              }
+            }
+          }
+        });
+    } else {
+      window.myBar5.data.datasets = [{
+        label: "",
+        data: json["valores"],
+        borderWidth: 1
+      }];
+      window.myBar5.data.labels = json["nombres"];
+      window.myBar5.update();
+    }    
+  });
+}
 
 function load_razon_anio(data, cfg) {
   let input_fini = document.getElementById(`afini-${cfg['num']}`);
@@ -206,43 +294,51 @@ function load_razon_anio(data, cfg) {
 
     if( window.myBar4 === undefined) {
       window.myBar4 = new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: ["Bajo", "Alto"],
-          datasets: [{
-            label: "Razon delitos de alto y bajo impacto",
-            data: [json.bajo, json.alto],
-            borderWidth: 1
-          }],
-        },
-        options: {
-          gridLines: {
-              color: "rgba(0, 0, 0, 0)",
-          },   
-          scales: {
-            y: {
-              beginAtZero: true,
-              display: false,
-              grid: {
-                display: false,
-              },
+          type: 'pie',
+          data: {
+            labels: json["nombres"],
+            datasets: [{
+              label: "",
+              data: json["valores"],
+              borderWidth: 1
+            }],
+          },
+          options: {
+            gridLines: {
+                color: "rgba(0, 0, 0, 0)",
+            },   
+            plugins: {
+                title: { 
+                  display: false 
+                },
+               legend: {
+                  display: false
+               }
             },
-            x: {
-              display: false,
-              grid: {
+            scales: {
+              y: {
+                beginAtZero: true,
                 display: false,
+                grid: {
+                  display: false,
+                },
               },
+              x: {
+                display: false,
+                grid: {
+                  display: false,
+                },
+              }
             }
           }
-        }
-      });
+        });
     } else {
       window.myBar4.data.datasets = [{
-        label: "Razon delitos de alto y bajo impacto",
-        data: [json.bajo, json.alto],
+        label: "",
+        data: json["valores"],
         borderWidth: 1
       }];
-      window.myBar4.data.labels = ["Bajo", "Alto"];
+      window.myBar4.data.labels = json["nombres"];
       window.myBar4.update();
     }    
   });
@@ -408,6 +504,98 @@ function load_top_anio(data, cfg) {
         }];
         window.myBar2.data.labels = json["nombres"];
         window.myBar2.update();
+      }    
+    });
+}
+
+function load_all_anio(data, cfg) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  console.log('Fetching')
+  console.log(JSON.stringify(data))
+
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      const ctx = document.getElementById(`pie-all-${cfg.num}`);
+ 
+      if( window.myBar3 === undefined) {
+        window.myBar3 = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: json["nombres"],
+            datasets: [{
+              label: "",
+              data: json["valores"],
+              borderWidth: 1
+            }],
+          },
+          options: {
+            gridLines: {
+                color: "rgba(0, 0, 0, 0)",
+            },   
+            plugins: {
+                title: { 
+                  display: false 
+                },
+               legend: {
+                  display: false
+               }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                display: false,
+                grid: {
+                  display: false,
+                },
+              },
+              x: {
+                display: false,
+                grid: {
+                  display: false,
+                },
+              }
+            }
+          }
+        });
+      } else {
+        window.myBar3.data.datasets = [{
+          label: "",
+          data: json["valores"],
+          borderWidth: 1
+        }];
+        window.myBar3.data.labels = json["nombres"];
+        window.myBar3.update();
       }    
     });
 }
