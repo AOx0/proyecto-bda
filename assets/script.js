@@ -509,6 +509,159 @@ function load_top_anio(data, cfg) {
     });
 }
 
+function load_top_colonia(data, cfg) {
+  let input_fini = document.getElementById(`afini-${cfg['num']}`);
+  let input_init = document.getElementById(`ainit-${cfg['num']}`);
+
+  if (input_fini != undefined && input_fini != undefined) {
+    let err = false;
+    
+    if (data['annio_inicio'] < 2016 || data['annio_inicio'] > 2023) {
+      input_init.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_init.classList.remove("text-rose-300")
+    };
+    
+    if (data['annio_final'] < 2016 || data['annio_final'] > 2023) {
+      input_fini.classList.add("text-rose-300")
+      err = true
+    } else {
+      input_fini.classList.remove("text-rose-300")
+    };
+
+    if (err) return;
+  }
+
+  console.log('Fetching')
+  console.log(JSON.stringify(data))
+
+  fetch(cfg.endpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data)
+    }
+  )
+    .then((response) => response.json())
+    .then((json) => {
+      const ctx = document.getElementById(`pinned-${cfg.num}`);
+ 
+      if( window.myBar6 === undefined) {
+        window.myBar6 = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: json["nombres"],
+            datasets: [{
+              // label: `Top delitos`,
+              data: json["valores"],
+              borderWidth: 1,
+              pointRadius: 0,
+              fill: false,
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(255, 205, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(201, 203, 207, 0.2)',
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+                'rgba(255, 205, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(201, 203, 207, 0.2)',
+                'rgba(255, 99, 132, 0.2)',
+              ],
+              borderColor: [
+                'rgb(255, 99, 132)',
+                'rgb(255, 159, 64)',
+                'rgb(255, 205, 86)',
+                'rgb(75, 192, 192)',
+                'rgb(54, 162, 235)',
+                'rgb(153, 102, 255)',
+                'rgb(201, 203, 207)',
+                'rgb(255, 99, 132)',
+                'rgb(255, 159, 64)',
+                'rgb(255, 205, 86)',
+                'rgb(75, 192, 192)',
+                'rgb(54, 162, 235)',
+                'rgb(153, 102, 255)',
+                'rgb(201, 203, 207)',
+                'rgb(255, 99, 132)',
+              ],            
+            }],
+          },
+          options: {
+             indexAxis: 'y',
+             scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            plugins: {
+                title: { 
+                  display: false 
+                },
+               legend: {
+                  display: false
+               }
+            }
+          }
+        });
+      } else {
+        window.myBar6.data.datasets = [{
+            label: `Top delitos ${data.annio}`,
+            data: json["valores"],
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false,
+            backgroundColor: [
+              'rgba(255, 99, 132, 0.2)',
+              'rgba(255, 159, 64, 0.2)',
+              'rgba(255, 205, 86, 0.2)',
+              'rgba(75, 192, 192, 0.2)',
+              'rgba(54, 162, 235, 0.2)',
+              'rgba(153, 102, 255, 0.2)',
+              'rgba(201, 203, 207, 0.2)',
+              'rgba(255, 99, 132, 0.2)',
+              'rgba(255, 159, 64, 0.2)',
+              'rgba(255, 205, 86, 0.2)',
+              'rgba(75, 192, 192, 0.2)',
+              'rgba(54, 162, 235, 0.2)',
+              'rgba(153, 102, 255, 0.2)',
+              'rgba(201, 203, 207, 0.2)',
+              'rgba(255, 99, 132, 0.2)',
+            ],
+            borderColor: [
+              'rgb(255, 99, 132)',
+              'rgb(255, 159, 64)',
+              'rgb(255, 205, 86)',
+              'rgb(75, 192, 192)',
+              'rgb(54, 162, 235)',
+              'rgb(153, 102, 255)',
+              'rgb(201, 203, 207)',
+              'rgb(255, 99, 132)',
+              'rgb(255, 159, 64)',
+              'rgb(255, 205, 86)',
+              'rgb(75, 192, 192)',
+              'rgb(54, 162, 235)',
+              'rgb(153, 102, 255)',
+              'rgb(201, 203, 207)',
+              'rgb(255, 99, 132)',
+            ],            
+        }];
+        window.myBar6.data.labels = json["nombres"];
+        window.myBar6.update();
+      }    
+    });
+}
+
+
 function load_all_anio(data, cfg) {
   let input_fini = document.getElementById(`afini-${cfg['num']}`);
   let input_init = document.getElementById(`ainit-${cfg['num']}`);
