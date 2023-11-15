@@ -127,8 +127,8 @@ async fn root() -> Hello<'static> {
             Content {
                 name: "Robos",
                 content: " ",
-                desc: "Robos armados",
-                method: "/date/2023-02-24",
+                desc: "En este año",
+                method: "/numero_robos/2023",
             },
             Content {
                 name: "Homicidios",
@@ -927,8 +927,19 @@ async fn ultimo_dato(State(state): State<Shared>) -> String {
 }
 
 async fn numero_anio(State(state): State<Shared>, Path(anio): Path<u16>) -> String {
-    let (resultado,): (i64,) =
-        sqlx::query_as("SELECT COUNT(*) FROM delitos JOIN categoria USING(id_categoria) WHERE id_anio_hecho = ? AND categoria = 'HOMICIDIO DOLOSO' LIMIT 1;")
+    let (resultado,): (String,) =
+        sqlx::query_as("SELECT FORMAT(COUNT(*), 0) FROM delitos JOIN categoria USING(id_categoria) WHERE id_anio_hecho = ? AND categoria = 'HOMICIDIO DOLOSO' LIMIT 1;")
+            .bind(&(anio - OFFSET))
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+
+    format!("+{resultado}")
+}
+
+async fn numero_robo(State(state): State<Shared>, Path(anio): Path<u16>) -> String {
+    let (resultado,): (String,) =
+        sqlx::query_as("SELECT FORMAT(COUNT(*), 0) FROM delitos JOIN categoria USING(id_categoria) WHERE id_anio_hecho = ? AND id_categoria IN (SELECT id_categoria FROM categoria WHERE categoria LIKE '%ROBO%') LIMIT 1;")
             .bind(&(anio - OFFSET))
             .fetch_one(&state.db)
             .await
@@ -1047,6 +1058,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/alto_y_bajo2", post(cantidad_alto_y_bajo2))
         .route("/ultimo_dato", get(ultimo_dato))
         .route("/numero_homicidios/:anio", get(numero_anio))
+        .route("/numero_robos/:anio", get(numero_robo))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)

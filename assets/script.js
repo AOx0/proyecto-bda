@@ -1,4 +1,5 @@
 const MAIN_COLOR = "rgb(17, 24, 39)";
+let FORMATER = new Intl.NumberFormat('en-US', {});
 
 const DIAS = [
   "Lunes",
@@ -349,10 +350,10 @@ function change_map_info(id, edo, valores) {
     let value = document.getElementById(`${id}-value`);
   if (!(edo === undefined)) {
     name.innerHTML = `<p>${NOMBRES[edo - 1]}</p>`
-    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', {}).format(valores.valores[edo - 1])}</p>`
+    value.innerHTML = `<p>Incidentes: ${valores.valores[edo - 1]}</p>`
   } else {
     name.innerHTML = `<p>Total</p>`
-    value.innerHTML = `<p>Incidentes: ${new Intl.NumberFormat('en-US', {}).format(valores.total)}</p>`
+    value.innerHTML = `<p>Incidentes: ${valores.total}</p>`
   }
 }
 
@@ -848,8 +849,8 @@ function calculateProbabilityLessThan(x, mean, stdDeviation) {
 
 function update_map_data(n, data, valores) {
   // console.log(`Updating ${n} with ${data.total}`)
-  valores['valores'] = data.valores;
-  valores['total'] = data.total;
+  valores['valores'] = data.valores.map(e => FORMATER.format(e));
+  valores['total'] = FORMATER.format(data.total);
   let vals = data.valores.map((v) => v / data.total);
 
   let r = calculateStandardDeviation(vals);
@@ -869,7 +870,7 @@ function update_years_data(n, data, valores) {
   // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
   console.log(valores);
-  valores['anios'] = data.valores;
+  valores['anios'] = data.valores.map(e => FORMATER.format(e));
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
@@ -887,7 +888,7 @@ function update_dias_data(n, data, valores) {
   // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
   console.log(valores);
-  valores['dias'] = data.valores;
+  valores['dias'] = data.valores.map(e => FORMATER.format(e));
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
@@ -904,7 +905,7 @@ function update_hours_data(n, data, valores) {
   // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
   console.log(valores);
-  valores['horas'] = data.valores;
+  valores['horas'] = data.valores.map(e => FORMATER.format(e));
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
@@ -921,7 +922,7 @@ function update_mes_data(n, data, valores) {
   // console.log(`Updating ${n} with ${data.total} y ${data.valores}`)
   let vals = data.valores.map((v) => v / data.total);
   console.log(valores);
-  valores[`y${data.anio}`] = data.valores;
+  valores[`y${data.anio}`] = data.valores.map(e => FORMATER.format(e));
 
   let r = calculateStandardDeviation(vals);
   let r2 = calculateMean(vals);
