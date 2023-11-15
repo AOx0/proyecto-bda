@@ -1013,12 +1013,16 @@ async fn cantidad_alto_y_bajo(
     } = dbg!(sol);
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, 
-                COUNT(*) AS fre 
-           FROM delitos JOIN delito USING(id_delito) 
-          WHERE id_anio_hecho BETWEEN ? AND ? 
-                AND id_categoria = 1 
-          GROUP BY delito;
+        "SELECT CONCAT(delito, ',', alcaldia_hecho), fre
+           FROM (SELECT id_delito,
+                        id_alcaldia_hecho,
+                        COUNT(*) AS fre 
+                   FROM delitos 
+                  WHERE id_anio_hecho BETWEEN ? AND ? 
+                    AND id_categoria = 1
+                  GROUP BY id_delito) as R
+           JOIN alcaldia_hecho USING(id_alcaldia_hecho) 
+           JOIN delito USING(id_delito); 
         ",
     ))
     .bind(&(annio_inicio - OFFSET))
@@ -1105,13 +1109,16 @@ async fn cantidad_alto_y_bajo2(
     } = dbg!(sol);
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, 
-                COUNT(*) AS fre 
-           FROM delitos 
-           JOIN delito USING(id_delito) 
-          WHERE id_anio_hecho BETWEEN ? AND ? 
-                AND id_categoria != 1 
-          GROUP BY delito;
+        "SELECT CONCAT(delito, ',', alcaldia_hecho), fre
+           FROM (SELECT id_delito,
+                        id_alcaldia_hecho,
+                        COUNT(*) AS fre 
+                   FROM delitos 
+                  WHERE id_anio_hecho BETWEEN ? AND ? 
+                    AND id_categoria != 1
+                  GROUP BY id_delito) as R
+           JOIN alcaldia_hecho USING(id_alcaldia_hecho) 
+           JOIN delito USING(id_delito); 
         ",
     ))
     .bind(&(annio_inicio - OFFSET))
