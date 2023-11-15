@@ -366,9 +366,9 @@ async fn mapa_porcentajes(
         "SELECT COUNT(1) 
            FROM delitos 
           WHERE {}id_anio_hecho BETWEEN ? AND ? 
-                AND delitos.id_alcaldia_hecho IS NOT NULL 
-          GROUP BY delitos.id_alcaldia_hecho 
-          ORDER BY delitos.id_alcaldia_hecho;
+                AND id_alcaldia_hecho IS NOT NULL 
+          GROUP BY id_alcaldia_hecho 
+          ORDER BY id_alcaldia_hecho;
         ",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
@@ -899,14 +899,15 @@ async fn top_por_anio(
     categorias.sort();
 
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, 
-                COUNT(*) AS fre
-           FROM delitos 
-           JOIN delito USING(id_delito) 
-          WHERE {}id_anio_hecho BETWEEN ? AND ? 
-          GROUP BY delito
-          ORDER BY fre DESC
-          LIMIT 15;
+        "SELECT delito, fre
+           FROM (SELECT id_delito,
+                        COUNT(*) AS fre
+                   FROM delitos 
+                  WHERE {}id_anio_hecho BETWEEN ? AND ? 
+                  GROUP BY id_delito
+                  ORDER BY fre DESC
+                   LIMIT 15) as R
+           JOIN delito USING(id_delito);
         ",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
