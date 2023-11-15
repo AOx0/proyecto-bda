@@ -428,7 +428,7 @@
           <div x-data="{ show: false }" x-on:mouseover="show = true" x-on:mouseleave="show = false"
             class="w-full flex justify-center items-center">
             <div class="w-full relative z-0">
-              <div id="anio-{{ year }}" class="rounded h-6 min-w-full text-center font-bold"></div>
+              <div id="anio-{{ year }}" x-transition class="rounded h-6 min-w-full text-center font-bold"></div>
               <div class="absolute inset-0 flex justify-center items-center z-10">
                 <p class="font-bold text-white select-none">{{ year }}</p>
               </div>
@@ -449,7 +449,7 @@
               style="opacity: 0.0;" {% endif -%}>
               <div x-data="{ show: false }" x-on:mouseover="show = true" x-on:mouseleave="show = false"
                 class="w-full relative">
-                <div x-init="$el.style.backgroundColor = MAIN_COLOR; $el.style.opacity = 0.1;"
+                <div x-init="$el.style.backgroundColor = MAIN_COLOR; $el.style.opacity = 0.1;" x-transition
                   id="anio-{{ year }}-mes-{{ month }}" class="rounded h-6 min-w-full text-center font-bold"></div>
                 <div class="absolute inset-0 flex justify-center items-center z-10">
                   <p class="font-bold text-white select-none" x-text="MESES[{{ month - 1 }}]"></p>
@@ -557,7 +557,7 @@
       <div class="flex md:flex-row flex-col gap-x-4 min-w-full md:max-h-full mt-2 p-5 border rounded p-5">
         <div class="flex flex-col w-1/4 gap-y-2">
           {% for dia in (1..=7) %}
-          <div x-data="{ show: false }" x-on:mouseover="show = true" x-on:mouseleave="show = false"
+          <div x-data="{ show: false }" x-on:mouseover="show = true" x-on:mouseleave="show = false" x-transition
             x-on:click="if (data.pinned.includes({{ dia }})) { data.pinned.splice(data.pinned.indexOf({{ dia }}), 1); } else { data.pinned.push({{ dia }})  }"
             class="w-full flex justify-center items-center">
             <div class="w-full relative z-0">
@@ -582,8 +582,8 @@
             <div class="w-1/12 h-full flex justify-center items-center">
               <div x-data="{ show: false }" x-on:mouseover="show = true" x-on:mouseleave="show = false"
                 class="w-full h-full relative">
-                <div x-init="$el.style.backgroundColor = MAIN_COLOR; /*$el.style.opacity = 0.1;*/" id="hora-{{ hora }}"
-                  class="rounded h-6 min-w-full min-h-full text-center font-bold"></div>
+                <div x-init="$el.style.backgroundColor = MAIN_COLOR; /*$el.style.opacity = 0.1;*/" x-transition
+                  id="hora-{{ hora }}" class="rounded h-6 min-w-full min-h-full text-center font-bold"></div>
                 <div class="absolute inset-0 flex justify-center items-center z-10">
                   <p class="font-bold text-white select-none">{{ hora - 1 }}</p>
                 </div>
