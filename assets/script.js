@@ -402,7 +402,7 @@ function load_top_anio(data, cfg) {
           data: {
             labels: json["nombres"],
             datasets: [{
-              label: `Top delitos ${data.annio}`,
+              // label: `Top delitos`,
               data: json["valores"],
               borderWidth: 1,
               pointRadius: 0,

@@ -119,10 +119,10 @@ async fn root() -> Hello<'static> {
         ],
         posts: &[
             Content {
-                name: "Muertos",
+                name: "Ultima actualización",
                 content: " ",
-                desc: "+0.12 de la semana pasada",
-                method: "/date/2023-02-23",
+                desc: "El registro más actual",
+                method: "/ultimo_dato",
             },
             Content {
                 name: "Robos",
@@ -133,13 +133,13 @@ async fn root() -> Hello<'static> {
             Content {
                 name: "Homicidios",
                 content: " ",
-                desc: "En esta semana",
-                method: "/date/2023-02-25",
+                desc: "En este año",
+                method: "/numero_homicidios/2023",
             },
             Content {
                 name: "Carpetas",
                 content: " ",
-                desc: "En esta año",
+                desc: "En este año",
                 method: "/date/upnow",
             },
         ],
@@ -149,11 +149,11 @@ async fn root() -> Hello<'static> {
                 href: "#zonas-calientes",
             },
             Section {
-                name: "Top delitos por años",
+                name: "Top 15 delitos por tiempo",
                 href: "#incidentes-por-anio",
             },
             Section {
-                name: "Razón de delitos de bajo y alto impacto",
+                name: "Delitos de bajo y alto impacto",
                 href: "#razones-por-anio",
             },
             Section {
@@ -214,14 +214,6 @@ struct CantidadesPorMes {
 struct CantidadesAltoYBajo {
     alto: u64,
     bajo: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct SolicitudAltoYBajo {
-    #[serde(default = "min_year")]
-    annio_inicio: u16,
-    #[serde(default = "max_year")]
-    annio_final: u16,
 }
 
 #[derive(Debug, Deserialize)]
@@ -513,12 +505,10 @@ async fn dias_porcentajes(
         mut categorias,
     } = sol;
 
-    let annio_inicio = annio_inicio - OFFSET;
-    let annio_final = annio_final - OFFSET;
-
     categorias.sort();
 
-    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    let (total,): (i64,) = sqlx::query_as(&format!(
+        "SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ?;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -532,11 +522,13 @@ async fn dias_porcentajes(
             )
         }
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_one(&state.db)
     .await
     .unwrap();
 
-    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho);",
+    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT WEEKDAY(fecha_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ? AND WEEKDAY(fecha_hecho) IS NOT NULL GROUP BY WEEKDAY(fecha_hecho) ORDER BY WEEKDAY(fecha_hecho);",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -550,6 +542,8 @@ async fn dias_porcentajes(
             )
         }
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -580,36 +574,10 @@ async fn horas_porcentajes(
         mut dias,
     } = dbg!(sol);
 
-    let annio_inicio = annio_inicio - OFFSET;
-    let annio_final = annio_final - OFFSET;
-
     dias.sort();
     categorias.sort();
 
-    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IN ({d});",
-            if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
-                format!("")
-            } else {
-                format!(
-                    "id_categoria IN ({0}) AND ",
-                    categorias
-                        .iter()
-                        .map(|id| format!("{id}"))
-                        .collect::<Vec<_>>()
-                        .join(",")
-                )
-            },
-            d = dias
-                .iter()
-                .map(|id| format!("{}", id - 1))
-                .collect::<Vec<_>>()
-                .join(",")
-        ))
-    .fetch_one(&state.db)
-    .await
-    .unwrap();
-
-    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({d}) GROUP BY HOUR(hora_hecho);",
+    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ? AND WEEKDAY(fecha_hecho) IN ({d});",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -628,6 +596,33 @@ async fn horas_porcentajes(
             .collect::<Vec<_>>()
             .join(",")
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
+    .fetch_one(&state.db)
+    .await
+    .unwrap();
+
+    let resultados: Vec<(i16, i64)> = sqlx::query_as(&format!("SELECT HOUR(hora_hecho), COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ? AND WEEKDAY(fecha_hecho) IS NOT NULL AND WEEKDAY(fecha_hecho) IN ({d}) GROUP BY HOUR(hora_hecho);",
+        if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
+            format!("")
+        } else {
+            format!(
+                "id_categoria IN ({0}) AND ",
+                categorias
+                    .iter()
+                    .map(|id| format!("{id}"))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        },
+        d = dias
+            .iter()
+            .map(|id| format!("{}", id - 1))
+            .collect::<Vec<_>>()
+            .join(",")
+    ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -655,10 +650,8 @@ async fn anio_porcentajes(
 
     categorias.sort();
 
-    let annio_inicio = 2016 - OFFSET;
-    let annio_final = 2023 - OFFSET;
-
-    let (total,): (i64,) = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final};",
+    let (total,): (i64,) = sqlx::query_as(&format!(
+        "SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ?;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -672,11 +665,13 @@ async fn anio_porcentajes(
             )
         }
     ))
+    .bind(&(min_year() - OFFSET))
+    .bind(&(max_year() - OFFSET))
     .fetch_one(&state.db)
     .await
     .unwrap();
 
-    let resultados: Vec<(i64,)> = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY id_anio_hecho ORDER BY id_anio_hecho;",
+    let resultados: Vec<(i64,)> = sqlx::query_as(&format!("SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho BETWEEN ? AND ? GROUP BY id_anio_hecho ORDER BY id_anio_hecho;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -690,6 +685,8 @@ async fn anio_porcentajes(
             )
         }
     ))
+    .bind(&(min_year() - OFFSET))
+    .bind(&(max_year() - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -714,10 +711,8 @@ async fn mes_porcentajes(
 
     categorias.sort();
 
-    let anio = anio - OFFSET;
-
     let (total,): (i64,) = sqlx::query_as(&format!(
-        "SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho = {anio};",
+        "SELECT COUNT(1) FROM delitos WHERE {}id_anio_hecho = ?;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -731,11 +726,12 @@ async fn mes_porcentajes(
             )
         }
     ))
+    .bind(&(anio - OFFSET))
     .fetch_one(&state.db)
     .await
     .unwrap();
 
-    let resultados: Vec<(u16, i64)> = sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE {}id_anio_hecho = {anio} GROUP BY id_mes_hecho;",
+    let resultados: Vec<(u16, i64)> = sqlx::query_as(&format!("SELECT id_mes_hecho, COUNT(1) FROM delitos WHERE {}id_anio_hecho = ? GROUP BY id_mes_hecho;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -747,13 +743,14 @@ async fn mes_porcentajes(
                 .join(","))
         }
     ))
+    .bind(&(anio - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
 
     // println!("{resultados:?}");
 
-    let mut res = if anio + OFFSET == 2023 {
+    let mut res = if anio == 2023 {
         vec![0; 9]
     } else {
         vec![0; 12]
@@ -771,7 +768,7 @@ async fn mes_porcentajes(
     MesPorcetajesEnAnio {
         total: u64::try_from(total).unwrap(),
         valores: res.into_iter().map(|n| n as u64).collect(),
-        anio: anio + OFFSET,
+        anio,
     }
     .into()
 }
@@ -796,11 +793,8 @@ async fn delitos_por_anio(
 
     categorias.sort();
 
-    let annio_inicio = annio_inicio - OFFSET;
-    let annio_final = annio_final - OFFSET;
-
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT categoria, COUNT(*) AS fre FROM delitos JOIN categoria USING(id_categoria) WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY id_categoria;",
+        "SELECT categoria, COUNT(*) AS fre FROM delitos JOIN categoria USING(id_categoria) WHERE {}id_anio_hecho BETWEEN ? AND ? GROUP BY id_categoria;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -813,6 +807,8 @@ async fn delitos_por_anio(
         }
 
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -842,11 +838,8 @@ async fn top_por_anio(
 
     categorias.sort();
 
-    let annio_inicio = annio_inicio - OFFSET;
-    let annio_final = annio_final - OFFSET;
-
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {}id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} GROUP BY delito;",
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE {}id_anio_hecho BETWEEN ? AND ? GROUP BY delito;",
         if categorias.is_empty() || categorias.len() >= ACTUAL_CATEGORIES {
             format!("")
         } else {
@@ -859,6 +852,8 @@ async fn top_por_anio(
         }
 
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -891,12 +886,11 @@ async fn cantidad_alto_y_bajo(
         ..
     } = dbg!(sol);
 
-    let annio_inicio = annio_inicio - OFFSET;
-    let annio_final = annio_final - OFFSET;
-
     let mut resultados: Vec<(String, i64)> = sqlx::query_as(&format!(
-        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho BETWEEN {annio_inicio} AND {annio_final} AND id_categoria = 1 GROUP BY delito;",
+        "SELECT delito, COUNT(*) AS fre FROM delitos JOIN delito USING(id_delito) WHERE id_anio_hecho BETWEEN ? AND ? AND id_categoria = 1 GROUP BY delito;",
     ))
+    .bind(&(annio_inicio - OFFSET))
+    .bind(&(annio_final - OFFSET))
     .fetch_all(&state.db)
     .await
     .unwrap();
@@ -919,6 +913,28 @@ async fn cantidad_alto_y_bajo(
             .collect(),
     }
     .into()
+}
+
+async fn ultimo_dato(State(state): State<Shared>) -> String {
+    let (resultado,): (NaiveDate,) =
+        sqlx::query_as("SELECT fecha_hecho FROM delitos WHERE id_anio_hecho = ? ORDER BY fecha_hecho DESC LIMIT 1;")
+            .bind(&(2023-1947))
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+
+    resultado.format("%Y-%m-%d").to_string()
+}
+
+async fn numero_anio(State(state): State<Shared>, Path(anio): Path<u16>) -> String {
+    let (resultado,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM delitos JOIN categoria USING(id_categoria) WHERE id_anio_hecho = ? AND categoria = 'HOMICIDIO DOLOSO' LIMIT 1;")
+            .bind(&(anio - OFFSET))
+            .fetch_one(&state.db)
+            .await
+            .unwrap();
+
+    format!("+{resultado}")
 }
 
 async fn cantidad_alto_y_bajo2(
@@ -1029,6 +1045,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/delitos_por_anio", post(delitos_por_anio))
         .route("/alto_y_bajo", post(cantidad_alto_y_bajo))
         .route("/alto_y_bajo2", post(cantidad_alto_y_bajo2))
+        .route("/ultimo_dato", get(ultimo_dato))
+        .route("/numero_homicidios/:anio", get(numero_anio))
         .route("/c_por_mes", post(cantidades_por_mes))
         .route("/date/upnow", get(untilnow))
         .with_state(state)
