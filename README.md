@@ -1,5 +1,7 @@
 # proyecto-bda 
 
+<img width="1392" alt="Screenshot 2023-11-17 at 6 20 52 a m" src="https://github.com/AOx0/proyecto-bda/assets/50227494/78118ba4-6805-4025-a755-2c3cb54b0377">
+
 ## Dependencies
 
 1. You must have the Rust Programming Language Stable Toolchain, read more [here](https://www.rust-lang.org/tools/install)
@@ -44,3 +46,8 @@ source insert.sql
 cargo run --release
 ```
   
+# Resultados
+
+<img width="1048" alt="Screenshot 2023-11-17 at 6 23 29 a m" src="https://github.com/AOx0/proyecto-bda/assets/50227494/3a0d6806-ec34-4676-8892-3db8afabdf89">
+<img width="1048" alt="Screenshot 2023-11-17 at 6 23 11 a m" src="https://github.com/AOx0/proyecto-bda/assets/50227494/c22c3283-1adb-4e92-8784-49cc439b878a">
+<img width="1048" alt="Screenshot 2023-11-17 at 6 25 22 a m" src="https://github.com/AOx0/proyecto-bda/assets/50227494/6c5e7ca6-9504-452d-bd6c-2ddb2c626b11">
