@@ -14,7 +14,7 @@ edition = "2021"
 anyhow = "1.0.75"
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.3.0"
-axum = { version = "0.6.20", features = ["macros"] }
+axum = { version = "0.7.1", features = ["macros"] }
 axum-extra = { version = "0.8.0", features = ["protobuf"] }
 chrono = "0.4.31"
 dhat = { version = "0.3.2", optional = true }
